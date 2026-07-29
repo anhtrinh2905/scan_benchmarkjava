@@ -10,3 +10,5 @@ results/
 .env.test.local
 .env.production.local
 __pycache__/
+# Added by ggshield
+.cache_ggshield

@@ -70,14 +70,13 @@ def select_tests(truth: dict[str, dict], size: int) -> list[str]:
     return names[:size] if size else names
 
 
-# CUSTOM_SCAN_MODEL — model Metis dùng để QUÉT.
-# Không có CUSTOM_SCAN_BASE_URL riêng trong .env: endpoint và key dùng chung tên
-# CUSTOM_JUDGE_* (di sản từ week1) nhưng ở đây chúng phục vụ model QUÉT.
-# CUSTOM_JUDGE_MODEL không còn cần — harness không có LLM-judge nữa.
+# CUSTOM_SCAN_MODEL — model Metis dùng để QUÉT (OpenCode Go/Zen model id).
+# OPENCODE_BASE_URL / OPENCODE_API_KEY — endpoint OpenAI-compatible của OpenCode.
+# Harness không có LLM-judge; không cần biến JUDGE_MODEL.
 ENV_KEYS = (
     "CUSTOM_SCAN_MODEL",
-    "CUSTOM_JUDGE_BASE_URL",
-    "CUSTOM_JUDGE_API_KEY",
+    "OPENCODE_BASE_URL",
+    "OPENCODE_API_KEY",
 )
 
 # Metis chỉ có một rule SARIF (AI001) và ghi loại lỗ hổng vào properties.cwe dưới
@@ -162,13 +161,13 @@ def render_metis_yaml(cfg: dict[str, str], max_workers: int, max_rounds: int) ->
     """
     q = json.dumps
     return f"""# Sinh tự động bởi bench.py — mọi sửa tay sẽ bị ghi đè.
-# API key KHÔNG nằm trong file này; Metis đọc từ biến môi trường CUSTOM_JUDGE_API_KEY.
+# API key KHÔNG nằm trong file này; Metis đọc từ biến môi trường OPENCODE_API_KEY.
 
 llm_provider:
   name: "openai"
   model: {q(cfg["CUSTOM_SCAN_MODEL"])}
-  base_url: {q(cfg["CUSTOM_JUDGE_BASE_URL"])}
-  api_key_env: "CUSTOM_JUDGE_API_KEY"
+  base_url: {q(cfg["OPENCODE_BASE_URL"])}
+  api_key_env: "OPENCODE_API_KEY"
 
 metis_engine:
   max_token_length: 250000
@@ -274,7 +273,7 @@ def run_signature(cfg: dict[str, str], triage: bool, max_rounds: int) -> dict:
     triage là kết quả cũ phải bị coi là hết hạn, không được dùng lại im lặng."""
     return {
         "scan_model": cfg["CUSTOM_SCAN_MODEL"],
-        "base_url": cfg["CUSTOM_JUDGE_BASE_URL"],
+        "base_url": cfg["OPENCODE_BASE_URL"],
         "triage": triage,
         "max_rounds": max_rounds,
     }
@@ -916,7 +915,7 @@ def main() -> int:
         "generated_at": _utc_now(),
         "tag": args.tag,
         "scan_model": cfg["CUSTOM_SCAN_MODEL"],
-        "base_url": cfg["CUSTOM_JUDGE_BASE_URL"],
+        "base_url": cfg["OPENCODE_BASE_URL"],
         "metis_version": _metis_version(),
         "metis_git": _git_sha(METIS_DIR),
         "triage": triage,

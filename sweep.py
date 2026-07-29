@@ -118,8 +118,8 @@ def render_variant_yaml(cfg: dict[str, str], engine_override: dict,
         "llm_provider": {
             "name": "openai",
             "model": cfg["CUSTOM_SCAN_MODEL"],
-            "base_url": cfg["CUSTOM_JUDGE_BASE_URL"],
-            "api_key_env": "CUSTOM_JUDGE_API_KEY",
+            "base_url": cfg["OPENCODE_BASE_URL"],
+            "api_key_env": "OPENCODE_API_KEY",
         },
         "metis_engine": engine,
         "memory": {"enabled": False},
@@ -128,7 +128,7 @@ def render_variant_yaml(cfg: dict[str, str], engine_override: dict,
     return (
         "# Sinh tự động bởi sweep.py — mọi sửa tay sẽ bị ghi đè.\n"
         "# API key KHÔNG nằm trong file này; Metis đọc từ biến môi trường "
-        "CUSTOM_JUDGE_API_KEY.\n"
+        "OPENCODE_API_KEY.\n"
         + json.dumps(config, indent=2, ensure_ascii=False) + "\n"
     )
 
@@ -150,7 +150,7 @@ def variant_signature(cfg: dict[str, str], engine_override: dict,
     tests_digest = hashlib.sha256(",".join(sorted(test_names)).encode()).hexdigest()[:16]
     return {
         "scan_model": cfg["CUSTOM_SCAN_MODEL"],
-        "base_url": cfg["CUSTOM_JUDGE_BASE_URL"],
+        "base_url": cfg["OPENCODE_BASE_URL"],
         "engine_override": engine_override,
         "tests_digest": tests_digest,
     }
