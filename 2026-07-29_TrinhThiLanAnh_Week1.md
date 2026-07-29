@@ -21,25 +21,29 @@
 
 ```mermaid
 flowchart LR
-  DS["BenchmarkJava<br/>100 test + GT"] --> L1["① bench.py<br/>baseline Metis"]
+  DS["BenchmarkJava<br/>100 test + GT"] --> L1["① scripts/bench.py<br/>baseline Metis"]
 
   subgraph runs [" "]
     direction TB
-    L1["① bench.py<br/>baseline Metis"] --> L2["② sweep.py<br/>tối ưu tham số"]
-    L2 --> L3["③ ablation.py<br/>LLM vs harness vs Semgrep"]
+    L1["① scripts/bench.py<br/>baseline Metis"] --> L2["② scripts/sweep.py<br/>tối ưu tham số"]
+    L2 --> L3["③ scripts/ablation.py<br/>LLM vs harness vs Semgrep"]
   end
 
   L3 --> OUT["results/<br/>json · md · sarif"]
 ```
 
-| Lần | Script        | Mục đích                                | Lệnh chạy                          |
-| --- | ------------- | --------------------------------------- | ---------------------------------- |
-| 1   | `bench.py`    | Đo baseline Metis (`review_file` × 100) | `./bench.py --sample 100 -y`       |
-| 2   | `sweep.py`    | Tìm variant tham số tốt hơn             | `./sweep.py --sample 100 -y`       |
-| 3   | `ablation.py` | So discovery: LLM vs harness vs Semgrep | `./ablation.py --sample 100 -y`    |
+
+
+
+| Lần | Script               | Mục đích                                | Lệnh chạy                               |
+| --- | -------------------- | --------------------------------------- | --------------------------------------- |
+| 1   | `scripts/bench.py`   | Đo baseline Metis (`review_file` × 100) | `./scripts/bench.py --sample 100 -y`    |
+| 2   | `scripts/sweep.py`   | Tìm variant tham số tốt hơn             | `./scripts/sweep.py --sample 100 -y`    |
+| 3   | `scripts/ablation.py`| So discovery: LLM vs harness vs Semgrep | `./scripts/ablation.py --sample 100 -y` |
 
 
 > **strict vs lenient** — khác ở nhãn triage `inconclusive` của Metis: **strict** vẫn tính là báo cáo (dev phải đọc), **lenient** coi như đã loại. `valid` = báo · `invalid` = loại. Không triage → mọi finding mặc định `valid` → hai cột trùng nhau. Chênh lệch hai cột = mức do dự của model.
+
 
 
 ### Lần 1 — Metis baseline
@@ -47,59 +51,63 @@ flowchart LR
 - Model: `deepseek-v4-flash`, cấu hình mặc định của Metis.
 
 
-| Chỉ số            | strict          | lenient         |
-| ----------------- | --------------- | --------------- |
-| TP / FP / FN / TN | 71 / 8 / 4 / 17 | 71 / 8 / 4 / 17 |
-| Precision         | **89.9%**       | 89.9%           |
-| Recall            | **94.7%**       | 94.7%           |
+| Chỉ số            | strict           | lenient          |
+| ----------------- | ---------------- | ---------------- |
+| TP / FP / FN / TN | 50 / 4 / 25 / 21 | 47 / 4 / 28 / 21 |
+| Precision         | **92.6%**        | 92.2%            |
+| Recall            | **66.7%**        | 62.7%            |
 
 
-Chi phí: **118 finding · 67.3 phút · 3.56M token** (3.38M in / 0.17M out).
+Chi phí: **97 finding · 150.6 phút · 2.74M token** (2.36M in / 0.39M out).
 
 **Theo category**
 
 
 | Category     | Test | Recall    | Precision |
 | ------------ | ---- | --------- | --------- |
-| weakrand     | 18   | 100%      | 92.9%     |
-| sqli         | 15   | 100%      | 93.3%     |
-| hash         | 13   | **71.4%** | **71.4%** |
-| crypto       | 12   | 100%      | 90.0%     |
-| pathtraver   | 12   | 90.0%     | 90.0%     |
-| cmdi         | 10   | 100%      | 87.5%     |
-| xss          | 8    | 100%      | 100%      |
-| trustbound   | 5    | **66.7%** | **66.7%** |
-| securecookie | 4    | 100%      | 100%      |
+| weakrand     | 18   | **30.8%** | 66.7%     |
+| sqli         | 15   | 92.9%     | 92.9%     |
+| hash         | 13   | **14.3%** | 100%      |
+| crypto       | 12   | 100%      | 100%      |
+| pathtraver   | 12   | 100%      | 100%      |
+| cmdi         | 10   | **42.9%** | 75.0%     |
+| xss          | 8    | 87.5%     | 100%      |
+| trustbound   | 5    | **0%**    | —         |
+| securecookie | 4    | **0%**    | —         |
 | ldapi        | 3    | 100%      | 100%      |
 
 
-→ `hash` và `trustbound` là hai điểm yếu về recall (71.4% và 66.7%).
+→ Điểm yếu recall: `hash` (14.3%), `trustbound` / `securecookie` (0%), `weakrand` (30.8%), `cmdi` (42.9%).
 
 ---
+
+
 
 ### Lần 2 — Sweep tham số
 
-Mô tả: `./sweep.py --sample 100`, 5 variant, mỗi variant gọi `review_code` một lần trên cả tập test.
+Mô tả: `./scripts/sweep.py --sample 100`, 5 variant, mỗi variant gọi `review_code` một lần trên cả tập test.
 
 
-| Variant      | Thay đổi                              | Phút    | Token     | Findings | GT-P  | GT-R  |
-| ------------ | ------------------------------------- | ------- | --------- | -------- | ----- | ----- |
-| `baseline`   | (không đổi)                           | 14.8    | 3.82M     | 125      | 91.1% | 96.0% |
-| `workers_10` | `max_workers` 5→10                    | **8.1** | 3.79M     | 125      | 93.3% | 93.3% |
-| `rounds_3`   | `model_tools.max_rounds` 6→3          | 14.0    | **3.43M** | 117      | 94.6% | 93.3% |
-| `reach_1`    | `reachability_max_paths_per_sink` 3→1 | 14.5    | 3.98M     | 130      | 86.4% | 93.3% |
-| `lean_combo` | gộp cả 3                              | **7.4** | 3.85M     | 124      | 90.0% | 96.0% |
+| Variant      | Thay đổi                              | Phút     | Token     | Findings | GT-P  | GT-R      |
+| ------------ | ------------------------------------- | -------- | --------- | -------- | ----- | --------- |
+| `baseline`   | (không đổi)                           | 29.4     | 3.18M     | 94       | 100%  | 66.7%     |
+| `workers_10` | `max_workers` 5→10                    | 18.0     | **0.27M** | 48       | 92.9% | **34.7%** |
+| `rounds_3`   | `model_tools.max_rounds` 6→3          | 19.9     | 3.83M     | 128      | 95.3% | **81.3%** |
+| `reach_1`    | `reachability_max_paths_per_sink` 3→1 | 20.7     | 4.15M     | 130      | 95.2% | 80.0%     |
+| `lean_combo` | gộp cả 3                              | **12.8** | 4.04M     | 127      | 96.8% | **81.3%** |
 
 
-→ Trên 100 test, precision/recall các variant gần như phẳng (sai số ~1 file = 1%). `rounds_3` tiết kiệm token rõ nhất (~−10%); tăng `max_workers` chủ yếu giảm wall-clock, không giảm token.
+→ `rounds_3` và `lean_combo` nâng recall baseline 66.7% → **81.3%** (precision vẫn ≥95%). `lean_combo` nhanh nhất (12.8 phút). `workers_10` một mình bất thường (0.27M token · 48 finding · recall 34.7%) — nghi chạy lỗi/cắt sớm; khi gộp trong `lean_combo` thì không tái hiện.
 
 ---
+
+
 
 ### Lần 3 — Ablation study
 
 Mục tiêu: hiệu suất đến từ LLM reasoning trong agent loop, hay từ tri thức miền hard-code trong static analysis (ruleset)?
 
-Mô tả: `./ablation.py --sample 100` — cùng model, cùng ground truth, cùng `BASE_ENGINE`, **chỉ khác cơ chế discovery**:
+Mô tả: `./scripts/ablation.py --sample 100` — cùng model, cùng ground truth, cùng `BASE_ENGINE`, **chỉ khác cơ chế discovery**:
 
 
 | Arm             | Cơ chế                              | Cấu hình                                     |
@@ -111,51 +119,58 @@ Mô tả: `./ablation.py --sample 100` — cùng model, cùng ground truth, cùn
 
 
 
+
 #### Kết quả
 
 
-| Arm           | Youden strict | Youden **lenient** | Precision | Recall   | FPR       | Token     | Phút    | Youden/1M |
-| ------------- | ------------- | ------------------ | --------- | -------- | --------- | --------- | ------- | --------- |
-| `prompt_only` | 52.0%         | 52.0%              | 86.2%     | **100%** | 48.0%     | **0.55M** | **7.8** | **94.1**  |
-| `harness`     | 52.0%         | 28.0%              | 86.2%     | **100%** | 48.0%     | 4.78M     | 109.6   | 10.9      |
-| `static`      | 52.0%         | **58.7%**          | **92.7%** | 68.0%    | **16.0%** | 7.53M     | 15.9    | 6.9       |
-| `B_union_C`   | 40.0%         | **66.7%**          | 83.3%     | **100%** | 60.0%     | 12.3M     | 125.6   | 3.2       |
+| Arm           | Youden strict | Youden **lenient** | Precision | Recall    | FPR      | Token     | Phút    | Youden/1M |
+| ------------- | ------------- | ------------------ | --------- | --------- | -------- | --------- | ------- | --------- |
+| `prompt_only` | 54.7%         | 54.7%              | 93.0%     | 70.7%     | 16.0%    | **0.56M** | 16.2    | **98.1**  |
+| `harness`     | **70.7%**     | 46.7%              | 94.2%     | **86.7%** | 16.0%    | 3.44M     | 38.4    | 20.6      |
+| `static`      | 61.3%         | **64.0%**          | **96.3%** | 69.3%     | **8.0%** | 2.08M     | **8.1** | 29.5      |
+| `B_union_C`   | 69.3%         | **68.0%**          | 92.1%     | **93.3%** | 24.0%    | 5.51M     | 46.4    | 12.6      |
 
 
-> Precision / Recall / FPR lấy từ cột **strict**. Token và phút của `B_union_C` là **tổng** của B + C (arm dẫn xuất, không gọi LLM thêm).
+> Precision / Recall / FPR lấy từ cột **strict**. Token và phút của `B_union_C` là **tổng** của B + C (arm dẫn xuất, không gọi LLM thêm). Cả ba arm nguồn đều trên Pareto front; ROI cao nhất: `prompt_only`.
 
-Chi tiết counts (strict): A và B đều `TP 75 / FP 12 / FN 0 / TN 13` · C `TP 51 / FP 4 / FN 24 / TN 21` · union `TP 75 / FP 15 / FN 0 / TN 10`.
+Chi tiết counts (strict): A `TP 53 / FP 4 / FN 22 / TN 21` · B `TP 65 / FP 4 / FN 10 / TN 21` · C `TP 52 / FP 2 / FN 23 / TN 23` · union `TP 70 / FP 6 / FN 5 / TN 19`.
 
 #### Recall theo category
 
 
 | Category     | n   | `prompt_only` | `harness` | `static` |
 | ------------ | --- | ------------- | --------- | -------- |
-| weakrand     | 18  | 100%          | 100%      | **0%**   |
-| sqli         | 15  | 100%          | 100%      | 86%      |
-| hash         | 13  | 100%          | 100%      | 57%      |
+| weakrand     | 18  | 62%           | **92%**   | **0%**   |
+| sqli         | 15  | 86%           | 100%      | 86%      |
+| hash         | 13  | **29%**       | **29%**   | 57%      |
+| crypto       | 12  | 44%           | 89%       | 100%     |
 | pathtraver   | 12  | 100%          | 100%      | 80%      |
-| crypto       | 12  | 100%          | 100%      | 100%     |
-| cmdi         | 10  | 100%          | 100%      | 100%     |
-| xss          | 8   | 100%          | 100%      | 88%      |
-| trustbound   | 5   | 100%          | 100%      | 33%      |
-| securecookie | 4   | 100%          | 100%      | **0%**   |
+| cmdi         | 10  | 86%           | 100%      | 100%     |
+| xss          | 8   | 75%           | 88%       | 88%      |
+| trustbound   | 5   | 67%           | **33%**   | 67%      |
+| securecookie | 4   | **0%**        | 100%      | **0%**   |
 | ldapi        | 3   | 100%          | 100%      | 100%     |
+
+
+
 
 ## Kết luận
 
-1. **Hai cơ chế ngược nhau.** LLM: recall 100%, FPR 48%. Static: precision 92.7%, FPR 16%, recall 68%.
-2. `static` **yếu vì ruleset**, không phải kiến trúc — mất trắng `weakrand` (0/18) và `securecookie` (0/4). Bổ rule hai nhóm này là cách nâng recall rẻ nhất.
-3. `static` **không rẻ token** (7.53M vs 4.78M `harness`) vì triage ~100k token/finding; cái tiết kiệm là **wall-clock ~7×** (15.9 vs 109.6 phút).
-4. **Harness không phát hiện thêm** — cột strict bằng `prompt_only` dù đắt ~8.7× token. Giá trị thật nằm ở **lenient**: triage đánh nhiều finding thành `inconclusive` và hạ FP 12→2; `prompt_only` gắn `valid` đều nên khó ưu tiên khi dev tự lọc.
-5. **Bổ sung yếu.** Union: 54 chung · 74 chỉ harness · **6 chỉ Semgrep**. Thay harness bằng Semgrep mất nhiều recall; thêm Semgrep vào harness được ít mà FPR xấu hơn (48%→60%).
-6. **Union thắng lenient (66.7%), thua strict (40%)** vì phép hợp cộng FP hai bên — chỉ đáng dùng nếu tin nhãn `inconclusive`.
-7. **Youden strict = 52% cả ba arm là trùng hợp**, không phải bug: A↔B triệt tiêu 4–4 trên 8 test khác nhau; C là `68 − 16 = 52`.
+1. **Ba cơ chế phân tầng rõ.** `harness` thắng recall (86.7%). `static` thắng precision / FPR (96.3% / 8%). `prompt_only` thắng ROI token (98.1 Youden/1M).
+2. `static` **yếu vì ruleset**, không phải kiến trúc — mất trắng `weakrand` (0/13 vuln) và `securecookie` (0/1). Bổ rule hai nhóm này là cách nâng recall static rẻ nhất.
+3. `static` **rẻ hơn harness**: 2.08M vs 3.44M token, wall-clock **~4.7×** (8.1 vs 38.4 phút). Toàn bộ token của C là khâu triage.
+4. **Harness phát hiện thêm** so với `prompt_only` (+16 điểm recall: 70.7% → 86.7%) với ~6.2× token. Giá trị agent loop lần này đo được; phía lenient thì harness tụt mạnh (Youden 70.7% → 46.7%) vì triage đánh nhiều finding thành `inconclusive`.
+5. **Bổ sung có ích vừa phải.** Union trên 75 vuln: **47 chung · 18 chỉ harness · 5 chỉ Semgrep · 5 cả hai bỏ**. Thêm Semgrep vào harness được +5 TP nhưng FPR xấu hơn (16% → 24%).
+6. **Union gần ngang harness ở strict** (Youden 69.3% vs 70.7%) và **thắng lenient** (68.0%). Đáng dùng nếu chấp nhận FPR cao hơn hoặc tin nhãn `inconclusive`.
+7. **Pareto:** cả `prompt_only`, `harness`, `static` đều trên frontier. Muốn ROI → `prompt_only`; muốn điểm cao → `harness`; muốn nhanh + ít FP → `static`.
 
 ---
 
+
+
 ## Việc chưa làm
 
-- [ ] **Thử nghiệm sửa prompt**: chưa làm. Nhìn finding lần 1, hai hướng đáng thử nhất là (a) sửa **CWE mapping** để hết FN oan kiểu `CWE-759` vs `CWE-328`, và (b) prompt riêng cho `trustbound` (category yếu nhất).
-- [ ] **Bổ rule Semgrep cho** `weakrand` **và** `securecookie` — arm C hiện mất trắng 22/100 test ở hai nhóm này. Đây là cách nâng recall của static rẻ nhất.
+- [ ] **Thử nghiệm sửa prompt**: chưa làm. Hai hướng đáng thử nhất là (a) sửa **CWE mapping** / nhận diện `hash` (recall LLM chỉ 29%), và (b) prompt riêng cho `trustbound` / `weakrand` (baseline yếu).
+- [ ] **Bổ rule Semgrep cho** `weakrand` **và** `securecookie` — arm C hiện mất trắng hai nhóm này. Đây là cách nâng recall của static rẻ nhất.
 - [ ] **Mở rộng scope để tăng số mẫu âm.** 25 mẫu âm là quá ít — mỗi mẫu âm nặng 4 điểm FPR. Muốn FPR ổn định hơn thì cần ≥100 mẫu âm, tức khoảng ~400 test.
+- [ ] **Kiểm lại** `workers_10` **trong sweep** — run đơn lẻ token/recall bất thường; cần tái chạy trước khi kết luận về `max_workers`.

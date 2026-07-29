@@ -18,11 +18,11 @@ kiểm chứng của bench.py (load_config, load_ground_truth, select_tests,
 score_run, aggregate, load_usage, BenchError...) bằng cách import thẳng nó
 làm module — hai file nằm cùng thư mục nên không cần gói riêng.
 
-  ./sweep.py                      # 5 variant × 100 test — TỐN KÉM, sẽ hỏi xác nhận
-  ./sweep.py --dry-run            # xem config + lệnh sẽ chạy, không gọi LLM
-  ./sweep.py --only baseline rounds_3
-  ./sweep.py --sample 20          # scope nhỏ hơn để thử nghiệm rẻ trước
-  ./sweep.py --rescore            # chỉ chấm lại từ kết quả đã có, không gọi Metis
+  ./scripts/sweep.py                      # 5 variant × 100 test — TỐN KÉM, sẽ hỏi xác nhận
+  ./scripts/sweep.py --dry-run            # xem config + lệnh sẽ chạy, không gọi LLM
+  ./scripts/sweep.py --only baseline rounds_3
+  ./scripts/sweep.py --sample 20          # scope nhỏ hơn để thử nghiệm rẻ trước
+  ./scripts/sweep.py --rescore            # chỉ chấm lại từ kết quả đã có, không gọi Metis
 
 Variant chạy TUẦN TỰ (không song song với nhau): mỗi variant đã tự dùng
 max_workers riêng để review 100 file bên trong nó, và chạy nhiều variant cùng

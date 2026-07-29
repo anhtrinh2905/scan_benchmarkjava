@@ -25,11 +25,11 @@ quán với bench.py/sweep.py. Tái dùng trực tiếp động cơ đã kiểm 
 bench.py (load_config, load_ground_truth, select_tests, score_run, aggregate,
 load_usage, cwe_numbers, BenchError...) bằng cách import thẳng nó làm module.
 
-  ./ablation.py                    # 3 arm × 100 test — TỐN KÉM, sẽ hỏi xác nhận
-  ./ablation.py --dry-run          # in lệnh sẽ chạy (kể cả Semgrep), không gọi LLM
-  ./ablation.py --only harness static
-  ./ablation.py --sample 6 -y      # smoke rẻ trước khi đốt tiền
-  ./ablation.py --rescore          # chỉ chấm lại từ SARIF đã có
+  ./scripts/ablation.py                    # 3 arm × 100 test — TỐN KÉM, sẽ hỏi xác nhận
+  ./scripts/ablation.py --dry-run          # in lệnh sẽ chạy (kể cả Semgrep), không gọi LLM
+  ./scripts/ablation.py --only harness static
+  ./scripts/ablation.py --sample 6 -y      # smoke rẻ trước khi đốt tiền
+  ./scripts/ablation.py --rescore          # chỉ chấm lại từ SARIF đã có
 
 Arm chạy TUẦN TỰ: mỗi arm đã tự dùng max_workers riêng bên trong, chạy song
 song sẽ làm méo phép đo wall-clock (tranh chấp rate-limit giữa các arm).

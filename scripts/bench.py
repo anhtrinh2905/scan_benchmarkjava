@@ -13,10 +13,10 @@
 Không có LLM-judge: mọi con số đều quy chiếu về một đáp án duy nhất là CSV.
 
 Một lệnh duy nhất:
-  ./bench.py                      # scan + chấm điểm
-  ./bench.py --dry-run            # xem trước, không gọi LLM
-  ./bench.py --repeat 3           # đo độ ổn định
-  ./bench.py --tag baseline       # ghi vào results/baseline/
+  ./scripts/bench.py                      # scan + chấm điểm
+  ./scripts/bench.py --dry-run            # xem trước, không gọi LLM
+  ./scripts/bench.py --repeat 3           # đo độ ổn định
+  ./scripts/bench.py --tag baseline       # ghi vào results/baseline/
 
 Chỉ dùng stdlib. Metis chạy môi trường riêng (Python 3.12+) do `uv run --project`
 tự dựng ở lần đầu.
@@ -41,7 +41,8 @@ from pathlib import Path
 # Đường dẫn
 # --------------------------------------------------------------------------
 
-ROOT = Path(__file__).resolve().parent
+# Repo root = parent of scripts/ (metis/, BenchmarkJava/, results/, .env sống ở đây).
+ROOT = Path(__file__).resolve().parent.parent
 METIS_DIR = ROOT / "metis"
 BENCH_DIR = ROOT / "BenchmarkJava"
 TESTCODE_DIR = BENCH_DIR / "src" / "main" / "java" / "org" / "owasp" / "benchmark" / "testcode"
