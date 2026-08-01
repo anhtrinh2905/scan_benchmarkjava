@@ -2,7 +2,20 @@
 # on case-insensitive filesystems (macOS default).
 /BenchmarkJava/
 metis/
-results/
+
+# results/ is ignored in bulk (~15MB of per-test SARIF and run logs), EXCEPT the 26
+# small files the Results page actually reads — those are tracked so the deployed
+# read-only image has real content to show (flow/04-adr.md decision 17).
+# `results/**` + `!results/**/` is the required idiom: git will not descend into an
+# excluded directory, so the directories must be re-included before their files can be.
+results/**
+!results/**/
+!results/**/scorecard.md
+!results/**/bench_summary.json
+!results/**/runmeta.json
+!results/**/compare.md
+!results/**/compare.csv
+!results/**/compare.json
 .vscode/
 .idea/
 .DS_Store

@@ -1,0 +1,18 @@
+{
+  "signature": {
+    "scan_model": "deepseek-v4-flash",
+    "base_url": "https://opencode.ai/zen/go/v1",
+    "engine_override": {
+      "reachability_max_paths_per_sink": 1
+    },
+    "tests_digest": "37e946e565d63213"
+  },
+  "wall_clock_seconds": 31.91,
+  "usage": {
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "total_tokens": 0,
+    "duration_seconds": 30.3
+  },
+  "ran_at": "2026-08-01T03:01:05.534475+00:00"
+}

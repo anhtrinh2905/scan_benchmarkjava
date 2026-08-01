@@ -1,0 +1,327 @@
+{
+  "generated_at": "2026-07-31T03:47:31.379417+00:00",
+  "tag": "c005_ui_loop",
+  "scan_model": "deepseek-v4-flash",
+  "base_url": "https://opencode.ai/zen/go/v1",
+  "metis_version": "1.5.0",
+  "metis_git": "59dff7c",
+  "triage": true,
+  "max_rounds": 6,
+  "max_workers": 2,
+  "parallel": 4,
+  "repeat": 1,
+  "sample_size": 6,
+  "selection": "first-N-by-name",
+  "tests": [
+    "BenchmarkTest00001",
+    "BenchmarkTest00002",
+    "BenchmarkTest00003",
+    "BenchmarkTest00004",
+    "BenchmarkTest00005",
+    "BenchmarkTest00006"
+  ],
+  "errors": [],
+  "total_findings": 8,
+  "wall_clock_seconds": 323.18,
+  "metis_duration_seconds": 310.16,
+  "tokens": {
+    "source": "metis_native",
+    "input_tokens": 153061,
+    "output_tokens": 31633,
+    "total_tokens": 184694
+  },
+  "ground_truth": {
+    "source": "expectedresults-1.2.csv",
+    "strict": {
+      "TP": 5,
+      "FP": 0,
+      "FN": 1,
+      "TN": 0,
+      "precision": 1.0,
+      "recall": 0.8333333333333334,
+      "fpr": null,
+      "youden": null
+    },
+    "lenient": {
+      "TP": 5,
+      "FP": 0,
+      "FN": 1,
+      "TN": 0,
+      "precision": 1.0,
+      "recall": 0.8333333333333334,
+      "fpr": null,
+      "youden": null
+    },
+    "per_test": {
+      "BenchmarkTest00001": {
+        "category": "pathtraver",
+        "cwe": 22,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": true,
+            "lenient": true,
+            "outcome_strict": "TP",
+            "outcome_lenient": "TP",
+            "on_target": 1,
+            "off_target": 1,
+            "total": 2,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00002": {
+        "category": "pathtraver",
+        "cwe": 22,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": true,
+            "lenient": true,
+            "outcome_strict": "TP",
+            "outcome_lenient": "TP",
+            "on_target": 1,
+            "off_target": 1,
+            "total": 2,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00003": {
+        "category": "hash",
+        "cwe": 328,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00004": {
+        "category": "trustbound",
+        "cwe": 501,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": true,
+            "lenient": true,
+            "outcome_strict": "TP",
+            "outcome_lenient": "TP",
+            "on_target": 1,
+            "off_target": 0,
+            "total": 1,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00005": {
+        "category": "crypto",
+        "cwe": 327,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": true,
+            "lenient": true,
+            "outcome_strict": "TP",
+            "outcome_lenient": "TP",
+            "on_target": 1,
+            "off_target": 1,
+            "total": 2,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00006": {
+        "category": "cmdi",
+        "cwe": 78,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": true,
+            "lenient": true,
+            "outcome_strict": "TP",
+            "outcome_lenient": "TP",
+            "on_target": 1,
+            "off_target": 0,
+            "total": 1,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      }
+    }
+  },
+  "findings": {
+    "BenchmarkTest00001": [
+      {
+        "run": 1,
+        "cwe_raw": "CWE-22",
+        "cwes": [
+          22
+        ],
+        "severity": "High",
+        "confidence": 0.95,
+        "reasoning": "The cookie value for 'BenchmarkTest00001' is fully attacker-controlled (it is read from request.getCookies() and URL-decoded at line 61 with no validation, whitelisting, or traversal filtering). At line 71 this value is concatenated directly onto the server's TESTFILES_DIR to construct a file name, and at line 72 the resulting path is opened with java.io.FileInputStream. An attacker can supply a value such as '../../../../etc/passwd' (URL-encoded) in the cookie to escape the intended directory and read arbitrary files readable by the servlet process. The file contents are then written back to the response (HTML-encoded at lines 75-84), enabling exfiltration of sensitive server files. There is no canonical-path check, no normalization, and no restriction that the resolved path stays inside TESTFILES_DIR.",
+        "mitigation": "Validate and sanitize the user-supplied path component before use. For example, reject values containing path separators, '..', or absolute paths; resolve the final path with Path.normalize()/toRealPath() and verify it is still under the intended TESTFILES_DIR; or use a lookup based on a whitelisted file name/index instead of raw user input.",
+        "status": "valid",
+        "triaged": true,
+        "triage_reason": "Verdict: The finding is valid because an attacker-controlled cookie value is URL-decoded and directly concatenated into a file path opened with FileInputStream, with no validation or canonicalization in the visible path. Evidence: Cookie value is read and decoded at BenchmarkTest00001.java:61, concatenated to TESTFILES_DIR at line 71, opened as a file at line 72, and file contents are written to the response at lines 75-84. Gap: none.",
+        "line": 1,
+        "snippet": "61:                     param = java.net.URLDecoder.decode(theCookie.getValue(), \"UTF-8\");\n...\n 71:             fileName = org.owasp.benchmark.helpers.Utils.TESTFILES_DIR + param;\n 72:             fis = new java.io.FileInputStream(new java.io.File(fileName));",
+        "issue": "Path traversal (arbitrary file read) via client-controlled cookie value concatenated into a file path"
+      },
+      {
+        "run": 1,
+        "cwe_raw": "CWE-644",
+        "cwes": [
+          644
+        ],
+        "severity": "Low",
+        "confidence": 0.55,
+        "reasoning": "The cookie's Domain attribute is set from the Host component of request.getRequestURL(), which is derived from the client-supplied Host header. An attacker who can influence the Host header (e.g., via a crafted request or poisoned proxy/cache scenario) can cause the application to set a cookie scoped to an arbitrary domain. If any session/state cookie were similarly scoped, the cookie could be delivered to attacker-controlled domains; here it manipulates cookie scope based on unvalidated input. The domain should be derived from trusted server configuration, not the request.",
+        "mitigation": "Do not derive the cookie Domain from the Host header. Set an explicit, hardcoded domain from trusted configuration, or omit the Domain attribute entirely so browsers default to the host that set the cookie.",
+        "status": "valid",
+        "triaged": true,
+        "triage_reason": "Verdict: The finding is valid — the cookie Domain attribute is set from the host component of request.getRequestURL(), which the servlet container reconstructs from the client-supplied Host header, and no validation guards the value. Evidence: src/main/java/org/owasp/benchmark/testcode/BenchmarkTest00001.java:42 executes `userCookie.setDomain(new java.net.URL(request.getRequestURL().toString()).getHost())` inside doGet, with no allowlist, sanitization, or host check in the surrounding method (lines 32-47), and the resulting cookie is emitted via `response.addCookie(userCookie)` at line 43. Gap: none.",
+        "line": 42,
+        "snippet": "42:         userCookie.setDomain(new java.net.URL(request.getRequestURL().toString()).getHost());",
+        "issue": "Cookie domain derived from attacker-controllable Host header (host header injection / cookie domain manipulation)"
+      }
+    ],
+    "BenchmarkTest00002": [
+      {
+        "run": 1,
+        "cwe_raw": "CWE-22",
+        "cwes": [
+          22
+        ],
+        "severity": "High",
+        "confidence": 0.95,
+        "reasoning": "In doPost(), the value of the 'BenchmarkTest00002' cookie (fully client-controlled, URL-decoded) is concatenated directly onto a base directory and used to construct a java.io.FileOutputStream with truncate mode (false => overwrite). The cookie value is not validated or normalized, so an attacker can supply traversal sequences such as '../../...' or absolute paths to escape TESTFILES_DIR and create/truncate/overwrite arbitrary files writable by the servlet process (e.g., application resources, config files), enabling integrity compromise or denial of service. The encodeForHTML() call only sanitizes the echoed filename for display; it does not mitigate the filesystem operation. This is the classic OWASP Benchmark path-traversal pattern.",
+        "mitigation": "Validate and canonicalize the attacker-supplied filename before any filesystem access: reject '..' segments, absolute paths, null bytes, and path separators; or resolve the target with Path.resolve(...).normalize()/toRealPath() and verify the resulting path stays within a configured safe base directory (canonical prefix check) before opening the stream.",
+        "status": "valid",
+        "triaged": true,
+        "triage_reason": "Verdict: valid — the attacker-controlled cookie value is URL-decoded, concatenated onto TESTFILES_DIR, and passed to FileOutputStream without any validation or canonicalization. Evidence: line 61 reads the cookie value into param; line 71 builds fileName = TESTFILES_DIR + param; line 73 opens new FileOutputStream(fileName, false) for write/truncate; no sanitizer or guard exists in the doPost flow (lines 53-84), and encodeForHTML at line 77 only sanitizes the echoed message. Gap: none.",
+        "line": 61,
+        "snippet": "param = java.net.URLDecoder.decode(theCookie.getValue(), \"UTF-8\");\n                    break;\n                }\n            }\n        }\n\n        String fileName = null;\n        java.io.FileOutputStream fos = null;\n\n        try {\n            fileName = org.owasp.benchmark.helpers.Utils.TESTFILES_DIR + param;\n\n            fos = new java.io.FileOutputStream(fileName, false);",
+        "issue": "Path traversal / arbitrary file write via attacker-controlled cookie value concatenated into a file path opened with FileOutputStream"
+      },
+      {
+        "run": 1,
+        "cwe_raw": "CWE-15",
+        "cwes": [
+          15
+        ],
+        "severity": "Low",
+        "confidence": 0.6,
+        "reasoning": "In doGet(), the Set-Cookie Domain attribute is computed from request.getRequestURL(), whose host component is driven by the client-supplied Host header. A client can manipulate the Host header so the server issues a cookie scoped to an attacker-chosen domain, enabling cookie domain/scope manipulation, poisoning of the legitimate cookie, or cross-domain cookie injection that can feed session-fixation or CSRF-style attacks. The cookie value itself is a constant in this case, which limits impact, but the pattern of trusting client-controlled input for a security-sensitive cookie attribute is unsafe.",
+        "mitigation": "Set the cookie Domain (and Path) from a trusted, fixed server configuration rather than from the request's Host/URL; alternatively, omit the Domain attribute entirely (host-only cookie) and validate the Host header against an allowlist before deriving anything from it.",
+        "status": "valid",
+        "triaged": true,
+        "triage_reason": "Verdict: The cookie Domain attribute is derived from the request URL host, which is client-influenced via the Host header, with no validation in the handler. Evidence: BenchmarkTest00002.java:42 sets Domain from `new java.net.URL(request.getRequestURL().toString()).getHost()` (the reported line 41 is the adjacent setPath call; the domain code is line 42), and line 43 adds the cookie to the response, with the full doGet body (lines 33-47) showing no host allowlist, validation, or fixed-config fallback. Gap: none.",
+        "line": 41,
+        "snippet": "userCookie.setPath(request.getRequestURI());\n        userCookie.setDomain(new java.net.URL(request.getRequestURL().toString()).getHost());",
+        "issue": "Cookie Domain attribute derived from client-controlled Host header"
+      }
+    ],
+    "BenchmarkTest00003": [],
+    "BenchmarkTest00004": [
+      {
+        "run": 1,
+        "cwe_raw": "CWE-501",
+        "cwes": [
+          501
+        ],
+        "severity": "Medium",
+        "confidence": 0.85,
+        "reasoning": "The cookie value for 'BenchmarkTest00004' is fully controlled by the client (an attacker can send any value for this cookie, independent of what the server set in doGet). After URL-decoding, this value is used as the attribute-name argument to HttpSession.setAttribute() with no whitelist, format check, or length validation. This is a classic trust boundary violation: untrusted, client-supplied data is placed into a trusted server-side context (the session). An attacker can overwrite/corrupt arbitrary session attribute names with the fixed value '10340' - e.g., attributes used later for authorization, user state, or business logic - thereby poisoning session state. Because the name is unbounded and unvalidated, it can also be used to clobber application-managed session keys if their names are predictable.",
+        "mitigation": "Do not derive session attribute names from client-controlled input. Validate the cookie value against an allowlist of permitted attribute names (or map an opaque client-supplied key to a server-side attribute name), enforce a maximum length, and reject unexpected values. Session attribute keys should be server-controlled constants.",
+        "status": "valid",
+        "triaged": true,
+        "triage_reason": "Verdict: The finding is valid — an attacker-controlled, URL-decoded cookie value is used directly as the HttpSession attribute name without any validation. Evidence: BenchmarkTest00004.java:55 reads request.getCookies(), line 61 assigns param = URLDecoder.decode(theCookie.getValue(), \"UTF-8\") when the cookie name matches \"BenchmarkTest00004\", and the snippet shows request.getSession().setAttribute(param, \"10340\") immediately after, with no whitelist, format, or length check. Gap: none.",
+        "line": 55,
+        "snippet": "javax.servlet.http.Cookie[] theCookies = request.getCookies();\n\n        String param = \"noCookieValueSupplied\";\n        if (theCookies != null) {\n            for (javax.servlet.http.Cookie theCookie : theCookies) {\n                if (theCookie.getName().equals(\"BenchmarkTest00004\")) {\n                    param = java.net.URLDecoder.decode(theCookie.getValue(), \"UTF-8\");\n                    break;\n                }\n            }\n        }\n\n        // javax.servlet.http.HttpSession.setAttribute(java.lang.String^,java.lang.Object)\n        request.getSession().setAttribute(param, \"10340\");",
+        "issue": "Trust boundary violation: attacker-controlled cookie value used directly as a session attribute name without validation (CWE-501)."
+      }
+    ],
+    "BenchmarkTest00005": [
+      {
+        "run": 1,
+        "cwe_raw": "CWE-327",
+        "cwes": [
+          327
+        ],
+        "severity": "Medium",
+        "confidence": 0.95,
+        "reasoning": "The code encrypts the request-derived 'secret_value' using DES (56-bit key) in CBC mode and persists the ciphertext to passwordFile.txt. DES is a legacy, cryptographically broken algorithm whose 56-bit keyspace is trivially susceptible to exhaustive search (and known plaintext/meet-in-the-middle attacks), so any data encrypted with it can be recovered by an attacker who obtains the file. Although the key is randomly generated rather than hardcoded, the algorithm itself is the weakness; modern guidance requires AES with at least 128-bit keys.",
+        "mitigation": "Replace DES with a strong, modern authenticated encryption algorithm such as AES/GCM (e.g., Cipher.getInstance(\"AES/GCM/NoPadding\") with a 128- or 256-bit key generated via KeyGenerator.getInstance(\"AES\")). If backward compatibility with stored DES data is required, re-encrypt existing records before retiring DES.",
+        "status": "valid",
+        "triaged": true,
+        "triage_reason": "Verdict: The finding is valid — the servlet explicitly instantiates the legacy DES cipher and uses it to encrypt data. Evidence: line 63 calls Cipher.getInstance(\"DES/CBC/PKCS5Padding\"), line 66 generates a DES (56-bit) key via KeyGenerator.getInstance(\"DES\"), and line 69 initializes the cipher in ENCRYPT_MODE before encrypting (lines 71-80), confirming the insecure algorithm is actually used rather than merely referenced. Gap: none.",
+        "line": 63,
+        "snippet": "javax.crypto.Cipher c = javax.crypto.Cipher.getInstance(\"DES/CBC/PKCS5Padding\");\n\n            // Prepare the cipher to encrypt\n            javax.crypto.SecretKey key = javax.crypto.KeyGenerator.getInstance(\"DES\").generateKey();",
+        "issue": "Use of the insecure DES block cipher for encrypting sensitive data"
+      },
+      {
+        "run": 1,
+        "cwe_raw": "CWE-209",
+        "cwes": [
+          209
+        ],
+        "severity": "Low",
+        "confidence": 0.9,
+        "reasoning": "On any cryptographic failure, the full Java exception stack trace is printed directly to the HttpServletResponse writer and the exception is also rethrown as a ServletException. Stack traces can disclose internal class names, file paths, library versions, and code structure to remote clients, aiding reconnaissance for further attacks. The exception is additionally rethrown, potentially producing a second, framework-generated error page with the same sensitive details.",
+        "mitigation": "Log the full exception server-side (e.g., via a logging framework) and return only a generic, non-revealing error message to the client. Do not propagate raw exception details or rethrow exceptions whose stack traces reach the response.",
+        "status": "valid",
+        "triaged": true,
+        "triage_reason": "Verdict: The servlet writes the full exception stack trace to the HTTP response writer and rethrows the exception, exposing sensitive internal details to the client. Evidence: In doPost(HttpServletRequest, HttpServletResponse) the catch block at lines 110-119 calls e.printStackTrace(response.getWriter()) at line 118 and then throws new ServletException(e) at line 119; response is the servlet's HttpServletResponse (lines 33, 39, 42), and the PrintWriter obtained from getWriter() is the HTTP response output stream with no filtering, escaping, or generic-error replacement. Gap: none.",
+        "line": 118,
+        "snippet": "e.printStackTrace(response.getWriter());\n            throw new ServletException(e);",
+        "issue": "Sensitive stack trace written to HTTP response"
+      }
+    ],
+    "BenchmarkTest00006": [
+      {
+        "run": 1,
+        "cwe_raw": "CWE-78",
+        "cwes": [
+          78
+        ],
+        "severity": "High",
+        "confidence": 0.96,
+        "reasoning": "The servlet reads the raw value of the HTTP header \"BenchmarkTest00006\" directly from the request, URL-decodes it, and concatenates it into the string \"echo \" + param, which is then executed via ProcessBuilder with \"sh -c\" (or \"cmd.exe /c\") as the command shell. Because the header is fully attacker-controlled and is embedded in a shell command string without any validation, sanitization, or use of argument-passing APIs, an attacker can inject shell metacharacters (e.g., \";\", \"|\", \"&\", \"`\", \"$()\") after the \"echo\" to execute arbitrary OS commands on the server. The command output is then written back to the HTTP response, making the injection both exploitable and observable. The doGet handler also forwards to doPost, so both GET and POST requests are exposed to this vulnerability.",
+        "mitigation": "Do not build shell command strings by concatenating untrusted input. Pass the user-controlled value as a separate process argument (e.g., add it to argList as its own element so it is not interpreted by the shell), or better, avoid invoking a shell entirely and use a parameterized API that does not perform shell interpretation. If a shell is unavoidable, strictly validate/whitelist the allowed character set for the input and reject any shell metacharacters.",
+        "status": "valid",
+        "triaged": true,
+        "triage_reason": "Verdict: The finding is valid because the attacker-controlled header value flows unsanitized into a shell command string executed via ProcessBuilder. Evidence: BenchmarkTest00006.java:45-46 reads the BenchmarkTest00006 header into param, line 50 URL-decodes it, and line 62 concatenates it into 'echo ' + param before the ProcessBuilder executes the command list. Gap: none.",
+        "line": 44,
+        "snippet": "String param = \"\";\n        if (request.getHeader(\"BenchmarkTest00006\") != null) {\n            param = request.getHeader(\"BenchmarkTest00006\");\n        }\n\n        // URL Decode the header value since req.getHeader() doesn't. Unlike req.getParameter().\n        param = java.net.URLDecoder.decode(param, \"UTF-8\");\n\n        java.util.List<String> argList = new java.util.ArrayList<String>();\n\n        String osName = System.getProperty(\"os.name\");\n        if (osName.indexOf(\"Windows\") != -1) {\n            argList.add(\"cmd.exe\");\n            argList.add(\"/c\");\n        } else {\n            argList.add(\"sh\");\n            argList.add(\"-c\");\n        }\n        argList.add(\"echo \" + param);\n\n        ProcessBuilder pb = new ProcessBuilder();\n\n        pb.command(argList);\n\n        try {\n            Process p = pb.start();\n            org.owasp.benchmark.helpers.Utils.printOSCommandResults(p, response);",
+        "issue": "OS command injection via attacker-controlled HTTP header concatenated into a shell command"
+      }
+    ]
+  }
+}

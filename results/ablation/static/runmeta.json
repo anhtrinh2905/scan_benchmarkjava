@@ -1,0 +1,49 @@
+{
+  "signature": {
+    "metis_version": "1.5.0",
+    "metis_git": "59dff7c",
+    "semgrep_version": "1.171.0",
+    "normalizer_version": 2,
+    "scan_model": "deepseek-v4-flash",
+    "base_url": "https://opencode.ai/zen/go/v1",
+    "engine": "semgrep+metis",
+    "tools": "navigation",
+    "command": "triage",
+    "triage": false,
+    "semgrep_rulesets": [
+      "p/java",
+      "p/owasp-top-ten",
+      "/Users/trinhthilananh/Desktop/Personal/vinsoc/week2/scan_benchmarkjava/rules/benchmarkjava"
+    ],
+    "base_engine": {
+      "max_token_length": 250000,
+      "max_workers": 5,
+      "llm_max_retries": 5,
+      "triage_checkpoint_every": 50,
+      "triage_tool_timeout_seconds": 30,
+      "reachability_reasoning_effort": "medium",
+      "reachability_max_paths_per_sink": 3,
+      "model_tools": {
+        "max_rounds": 6
+      }
+    },
+    "tests_digest": "6b2d0b53d2445d41"
+  },
+  "wall_clock_seconds": 186.92,
+  "semgrep_seconds": 4.53,
+  "usage": {
+    "input_tokens": 692314,
+    "output_tokens": 69045,
+    "total_tokens": 761359,
+    "duration_seconds": 184.99
+  },
+  "semgrep_stats": {
+    "results": 39,
+    "with_cwe": 39,
+    "results_without_cwe": 0,
+    "rule_unknown": 0,
+    "rules_without_cwe": [],
+    "rules_unknown": []
+  },
+  "ran_at": "2026-07-31T03:25:51.170830+00:00"
+}

@@ -8,5 +8,11 @@ dependencies = [
     "streamlit>=1.60.0",
 ]
 
+# Pinned to public PyPI so the lockfile resolves off the corporate network: a build host
+# (Railway) cannot reach an internal GitLab registry, and this shell exports UV_INDEX
+# pointing at one. Declared here rather than left to the environment so the lock stays
+# reproducible wherever it is built. See flow/04-adr.md decision 18.
 [[tool.uv.index]]
-url = "https://gitlab.gitguardian.ovh/api/v4/projects/435/packages/pypi/simple"
+name = "pypi"
+url = "https://pypi.org/simple"
+default = true

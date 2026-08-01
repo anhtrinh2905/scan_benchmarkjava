@@ -1,0 +1,38 @@
+{
+  "signature": {
+    "metis_version": "1.5.0",
+    "metis_git": "59dff7c",
+    "semgrep_version": null,
+    "normalizer_version": 2,
+    "scan_model": "deepseek-v4-flash",
+    "base_url": "https://opencode.ai/zen/go/v1",
+    "engine": "metis",
+    "tools": "none",
+    "command": "review_code",
+    "triage": false,
+    "semgrep_rulesets": null,
+    "base_engine": {
+      "max_token_length": 250000,
+      "max_workers": 5,
+      "llm_max_retries": 5,
+      "triage_checkpoint_every": 50,
+      "triage_tool_timeout_seconds": 30,
+      "reachability_reasoning_effort": "medium",
+      "reachability_max_paths_per_sink": 3,
+      "model_tools": {
+        "max_rounds": 6
+      }
+    },
+    "tests_digest": "f8a30e93bc83b3ea"
+  },
+  "wall_clock_seconds": 87.0,
+  "semgrep_seconds": null,
+  "usage": {
+    "input_tokens": 58734,
+    "output_tokens": 39319,
+    "total_tokens": 98053,
+    "duration_seconds": 84.8
+  },
+  "semgrep_stats": null,
+  "ran_at": "2026-07-31T07:50:23.165633+00:00"
+}

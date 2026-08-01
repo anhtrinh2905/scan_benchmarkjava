@@ -9,6 +9,7 @@ from __future__ import annotations
 import csv
 import importlib
 import json
+import os
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -24,11 +25,19 @@ RULES_DIR = ROOT / "rules" / "benchmarkjava"
 SMOKE_SAMPLE_THRESHOLD = 10
 LOG_TAIL_LINES = 40
 
+READONLY_ENV_VAR = "SCAN_UI_READONLY"
+_READONLY_TRUTHY = {"1", "true", "yes"}
+
 # pid -> {"process": Popen, "log_path": Path} — outlives a single Streamlit rerun
 # because this module stays imported for the life of the server process.
 _RUN_REGISTRY: dict[int, dict] = {}
 
 Kind = Literal["bench", "sweep", "ablation"]
+RuntimeMode = Literal["local", "readonly"]
+
+
+class ReadOnlyModeError(RuntimeError):
+    """`start_run` was called on an instance that is not allowed to spawn scans."""
 
 # kind -> (module, attr holding the known --only names); bench.py has no such
 # dict — its --only is a free-text test-name substring filter, not a fixed set.
@@ -71,6 +80,14 @@ class ResultBundle:
     scorecard_md: str
     compare_rows: list[dict] | None
     cache_warning: str | None
+
+
+def runtime_mode() -> RuntimeMode:
+    """Whether this instance may spawn scans. Only an explicitly truthy
+    `SCAN_UI_READONLY` locks it down: an unset or misspelled variable resolves to
+    `"local"`, so a typo can never silently unlock scanning on a deployed host — it can
+    only fail toward the mode that already existed before deploy mode was added."""
+    return "readonly" if os.environ.get(READONLY_ENV_VAR, "").strip().lower() in _READONLY_TRUTHY else "local"
 
 
 def known_only_values(kind: Kind) -> list[str]:
@@ -129,7 +146,16 @@ def _output_dir_for(command: list[str]) -> Path:
 
 def start_run(command: list[str]) -> RunHandle:
     """Spawn `command` in the background, log combined stdout/stderr to a file
-    under its results dir, and return a handle `poll_run` can check on."""
+    under its results dir, and return a handle `poll_run` can check on.
+
+    Refuses outright in readonly mode. The check precedes every side-effect below —
+    no directory, no log file, no process — because this function, not the UI control
+    that usually calls it, is the boundary."""
+    if runtime_mode() == "readonly":
+        raise ReadOnlyModeError(
+            "This instance runs in read-only mode and cannot start scans. "
+            "Run the scan locally instead."
+        )
     started_at = datetime.now(timezone.utc)
     out_dir = _output_dir_for(command)
     out_dir.mkdir(parents=True, exist_ok=True)

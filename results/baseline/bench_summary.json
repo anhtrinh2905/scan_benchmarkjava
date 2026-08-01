@@ -1,0 +1,326 @@
+{
+  "generated_at": "2026-08-01T04:04:43.981390+00:00",
+  "tag": "baseline",
+  "scan_model": "deepseek-v4-flash",
+  "base_url": "https://opencode.ai/zen/go/v1",
+  "metis_version": "1.5.0",
+  "metis_git": "14cce32",
+  "triage": true,
+  "max_rounds": 6,
+  "max_workers": 2,
+  "parallel": 4,
+  "repeat": 1,
+  "sample_size": 6,
+  "selection": "first-N-by-name",
+  "tests": [
+    "BenchmarkTest00001",
+    "BenchmarkTest00002",
+    "BenchmarkTest00003",
+    "BenchmarkTest00004",
+    "BenchmarkTest00005",
+    "BenchmarkTest00006"
+  ],
+  "errors": [],
+  "total_findings": 8,
+  "wall_clock_seconds": 987.54,
+  "metis_duration_seconds": 840.19,
+  "tokens": {
+    "source": "metis_native",
+    "input_tokens": 60340,
+    "output_tokens": 19103,
+    "total_tokens": 79443
+  },
+  "ground_truth": {
+    "source": "expectedresults-1.2.csv",
+    "strict": {
+      "TP": 3,
+      "FP": 0,
+      "FN": 3,
+      "TN": 0,
+      "precision": 1.0,
+      "recall": 0.5,
+      "fpr": null,
+      "youden": null
+    },
+    "lenient": {
+      "TP": 1,
+      "FP": 0,
+      "FN": 5,
+      "TN": 0,
+      "precision": 1.0,
+      "recall": 0.16666666666666666,
+      "fpr": null,
+      "youden": null
+    },
+    "per_test": {
+      "BenchmarkTest00001": {
+        "category": "pathtraver",
+        "cwe": 22,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": true,
+            "lenient": true,
+            "outcome_strict": "TP",
+            "outcome_lenient": "TP",
+            "on_target": 1,
+            "off_target": 0,
+            "total": 1,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00002": {
+        "category": "pathtraver",
+        "cwe": 22,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": true,
+            "lenient": false,
+            "outcome_strict": "TP",
+            "outcome_lenient": "FN",
+            "on_target": 1,
+            "off_target": 2,
+            "total": 3,
+            "dismissed": 0,
+            "inconclusive": 3,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00003": {
+        "category": "hash",
+        "cwe": 328,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00004": {
+        "category": "trustbound",
+        "cwe": 501,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 1,
+            "total": 1,
+            "dismissed": 0,
+            "inconclusive": 1,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00005": {
+        "category": "crypto",
+        "cwe": 327,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": true,
+            "lenient": false,
+            "outcome_strict": "TP",
+            "outcome_lenient": "FN",
+            "on_target": 1,
+            "off_target": 2,
+            "total": 3,
+            "dismissed": 0,
+            "inconclusive": 3,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00006": {
+        "category": "cmdi",
+        "cwe": 78,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      }
+    }
+  },
+  "findings": {
+    "BenchmarkTest00001": [
+      {
+        "run": 1,
+        "cwe_raw": "CWE-22",
+        "cwes": [
+          22
+        ],
+        "severity": "High",
+        "confidence": 1.0,
+        "reasoning": "The cookie value is taken from the request (attacker-controlled) and used directly in constructing a file path by concatenation. No validation, sanitization, or normalization is performed to prevent path traversal sequences like '../'. An attacker can supply a cookie value containing path traversal characters to read arbitrary files outside the intended directory.",
+        "mitigation": "Validate the cookie value to ensure it does not contain path traversal sequences (e.g., '../' or '..\\'). Use a whitelist of allowed file names, or resolve the path to its canonical form and verify it stays within the intended base directory.",
+        "status": "valid",
+        "triaged": true,
+        "triage_reason": "Verdict: The finding is valid because attacker-controlled cookie value flows unsanitized into file path construction, enabling path traversal. Evidence: The cookie value is read at line 61 via URLDecoder.decode(theCookie.getValue(), ...), assigned to param, then concatenated to TESTFILES_DIR and used to open a FileInputStream at the reported lines (visible in finding snippet around lines 67-69). No validation, sanitization, or canonical-path check is present in the doPost method. Gap: none.",
+        "line": 57,
+        "snippet": "String param = \"noCookieValueSupplied\";\nif (theCookies != null) {\n    for (javax.servlet.http.Cookie theCookie : theCookies) {\n        if (theCookie.getName().equals(\"BenchmarkTest00001\")) {\n            param = java.net.URLDecoder.decode(theCookie.getValue(), \"UTF-8\");\n            break;\n        }\n    }\n}\n\nString fileName = null;\njava.io.FileInputStream fis = null;\n\ntry {\n    fileName = org.owasp.benchmark.helpers.Utils.TESTFILES_DIR + param;\n    fis = new java.io.FileInputStream(new java.io.File(fileName));",
+        "issue": "Path traversal via attacker-controlled cookie value"
+      }
+    ],
+    "BenchmarkTest00002": [
+      {
+        "run": 1,
+        "cwe_raw": "CWE-22",
+        "cwes": [
+          22
+        ],
+        "severity": "Critical",
+        "confidence": 0.95,
+        "reasoning": "The doPost method reads the cookie 'BenchmarkTest00002' from the request and uses its value (after URL decoding) to construct a file path by concatenating it with a base directory. The user-controlled cookie value is not validated or sanitized, allowing an attacker to supply path traversal sequences (e.g., '../../etc/passwd') to write to arbitrary files on the server. This is a classic path traversal vulnerability (CWE-22).",
+        "mitigation": "Validate the cookie value against a whitelist of allowed filenames. Use a canonical path check: File.getCanonicalPath() and verify it starts with the intended base directory. Alternatively, avoid using user input in file paths altogether.",
+        "status": "inconclusive",
+        "triaged": true,
+        "triage_reason": "Inconclusive because the triage model did not return a valid decision payload.",
+        "line": 57,
+        "snippet": "String param = \"noCookieValueSupplied\";\nif (theCookies != null) {\n    for (javax.servlet.http.Cookie theCookie : theCookies) {\n        if (theCookie.getName().equals(\"BenchmarkTest00002\")) {\n            param = java.net.URLDecoder.decode(theCookie.getValue(), \"UTF-8\");\n            break;\n        }\n    }\n}\n\nString fileName = null;\njava.io.FileOutputStream fos = null;\n\ntry {\n    fileName = org.owasp.benchmark.helpers.Utils.TESTFILES_DIR + param;\n\n    fos = new java.io.FileOutputStream(fileName, false);",
+        "issue": "Path Traversal via Unvalidated Cookie Value in FileOutputStream"
+      },
+      {
+        "run": 1,
+        "cwe_raw": "CWE-15",
+        "cwes": [
+          15
+        ],
+        "severity": "High",
+        "confidence": 0.8,
+        "reasoning": "The cookie domain is set using the host obtained from request.getRequestURL(), which is derived from the HTTP Host header. An attacker can manipulate the Host header to control the cookie's domain attribute, potentially causing the cookie to be sent to an attacker-controlled domain. This can lead to session fixation, cookie theft, or unintended disclosure of cookie values. Although the cookie value in this specific test is hardcoded and non-sensitive, the vulnerable pattern is present.",
+        "mitigation": "Do not set the cookie domain based on user-controlled input. Either omit the domain attribute (which defaults to the origin that set the cookie) or hardcode it to the application's authoritative domain after validating that it matches an expected value.",
+        "status": "inconclusive",
+        "triaged": true,
+        "triage_reason": "Inconclusive because the triage model did not return a valid decision payload.",
+        "line": 42,
+        "snippet": "userCookie.setDomain(new java.net.URL(request.getRequestURL().toString()).getHost());",
+        "issue": "Cookie Domain Set from Host Header (Cookie Injection)"
+      },
+      {
+        "run": 1,
+        "cwe_raw": "CWE-200",
+        "cwes": [
+          200
+        ],
+        "severity": "Low",
+        "confidence": 0.7,
+        "reasoning": "When a FileOutputStream fails to open, the constructed file path (which includes user-controlled input) is printed to standard output. In production environments, stdout/stderr often end up in log files that may be accessible to attackers, leaking internal file system layout and potentially confirming the presence of path traversal vulnerabilities.",
+        "mitigation": "Use a logging framework with appropriate log levels and sanitize sensitive data before logging. Avoid printing user-controlled file paths to consoles or logs.",
+        "status": "inconclusive",
+        "triaged": true,
+        "triage_reason": "Inconclusive because the triage model did not return a valid decision payload.",
+        "line": 80,
+        "snippet": "System.out.println(\"Couldn't open FileOutputStream on file: '\" + fileName + \"'\");",
+        "issue": "Sensitive File Path Leaked via Console Output"
+      }
+    ],
+    "BenchmarkTest00003": [],
+    "BenchmarkTest00004": [
+      {
+        "run": 1,
+        "cwe_raw": "CWE-807",
+        "cwes": [
+          807
+        ],
+        "severity": "High",
+        "confidence": 0.85,
+        "reasoning": "The param variable is derived from a cookie value without validation and used directly as the key for setting a session attribute. An attacker can control which session attribute is set by providing a crafted cookie. While the value is fixed to \"10340\", this could allow overwriting existing session attributes that may be used for security decisions (e.g., authentication state, roles). This constitutes a trust boundary violation.",
+        "mitigation": "Validate and sanitize the cookie value against a whitelist of allowed session attribute names, or use a fixed attribute name that is not derived from user input. Consider mapping user-supplied identifiers to safe internal attribute names.",
+        "status": "inconclusive",
+        "triaged": true,
+        "triage_reason": "Inconclusive because the triage model did not return a valid decision payload.",
+        "line": 57,
+        "snippet": "String param = \"noCookieValueSupplied\";\nif (theCookies != null) {\n    for (javax.servlet.http.Cookie theCookie : theCookies) {\n        if (theCookie.getName().equals(\"BenchmarkTest00004\")) {\n            param = java.net.URLDecoder.decode(theCookie.getValue(), \"UTF-8\");\n            break;\n        }\n    }\n}\n\n// javax.servlet.http.HttpSession.setAttribute(java.lang.String^,java.lang.Object)\nrequest.getSession().setAttribute(param, \"10340\");",
+        "issue": "User-controlled cookie value used as session attribute key without validation"
+      }
+    ],
+    "BenchmarkTest00005": [
+      {
+        "run": 1,
+        "cwe_raw": "CWE-327",
+        "cwes": [
+          327
+        ],
+        "severity": "High",
+        "confidence": 1.0,
+        "reasoning": "The code uses DES, which is a deprecated algorithm with a 56-bit key that can be brute-forced with modern hardware. Even though the key is randomly generated each time, the algorithm itself is considered broken and provides insufficient confidentiality protection. An attacker who obtains the ciphertext (stored in passwordFile.txt) could recover the plaintext with moderate effort.",
+        "mitigation": "Replace DES with a strong modern algorithm such as AES (e.g., \"AES/GCM/NoPadding\") with a key size of at least 128 bits. Use KeyGenerator.getInstance(\"AES\") and an appropriate initialization vector.",
+        "status": "inconclusive",
+        "triaged": true,
+        "triage_reason": "Inconclusive because the triage model did not return a valid decision payload.",
+        "line": 63,
+        "snippet": "javax.crypto.Cipher c = javax.crypto.Cipher.getInstance(\"DES/CBC/PKCS5Padding\");\n\n            // Prepare the cipher to encrypt\n            javax.crypto.SecretKey key = javax.crypto.KeyGenerator.getInstance(\"DES\").generateKey();",
+        "issue": "Use of broken or risky cryptographic algorithm DES"
+      },
+      {
+        "run": 1,
+        "cwe_raw": "CWE-209",
+        "cwes": [
+          209
+        ],
+        "severity": "Medium",
+        "confidence": 1.0,
+        "reasoning": "The catch block writes the full stack trace of the exception to the HTTP response via e.printStackTrace(response.getWriter()). This exposes internal implementation details such as class names, method names, line numbers, and potentially sensitive system paths to the client, aiding an attacker in understanding the application's internals and crafting further attacks.",
+        "mitigation": "Remove the call to e.printStackTrace(response.getWriter()). Instead, log the stack trace server-side and return a generic error message to the client. For example, use a logging framework and return a simple 500 error page.",
+        "status": "inconclusive",
+        "triaged": true,
+        "triage_reason": "Inconclusive because the triage model did not return a valid decision payload.",
+        "line": 115,
+        "snippet": "response.getWriter()\n                    .println(\n                            \"Problem executing crypto - javax.crypto.Cipher.getInstance(java.lang.String,java.security.Provider) Test Case\");\n            e.printStackTrace(response.getWriter());\n            throw new ServletException(e);",
+        "issue": "Information exposure through stack trace in HTTP response"
+      },
+      {
+        "run": 1,
+        "cwe_raw": "CWE-209",
+        "cwes": [
+          209
+        ],
+        "severity": "Low",
+        "confidence": 0.85,
+        "reasoning": "The call to java.net.URLDecoder.decode(param, \"UTF-8\") can throw IllegalArgumentException if the input string contains malformed percent-encoding (e.g., \"%ZZ\" or incomplete \"%X\"). This exception is not caught by any try-catch block (the surrounding try block starts at line 62, after this decode), so it propagates to the servlet container. The container may return an error response that includes a stack trace, leaking internal information, or it may cause a denial of service if the exception disrupts request handling. An attacker can trigger this by sending a specially crafted header value.",
+        "mitigation": "Wrap the URLDecoder.decode call in a try-catch block that specifically catches IllegalArgumentException. In the catch block, either log the error and return a 400 Bad Request response, or safely handle the malformed input without exposing stack traces.",
+        "status": "inconclusive",
+        "triaged": true,
+        "triage_reason": "Inconclusive because the triage model did not return a valid decision payload.",
+        "line": 50,
+        "snippet": "param = java.net.URLDecoder.decode(param, \"UTF-8\");",
+        "issue": "Unhandled IllegalArgumentException from URLDecoder.decode leading to potential information disclosure or denial of service"
+      }
+    ],
+    "BenchmarkTest00006": []
+  }
+}

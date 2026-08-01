@@ -1,0 +1,30 @@
+# Scan dependencies — 700MB the read-only instance cannot use (it never runs a scan).
+metis/
+BenchmarkJava/
+
+# Secrets and local environments — never in an image.
+.env
+.env.*
+.venv/
+.streamlit/secrets.toml
+.cache_ggshield
+
+# Build/VCS noise.
+.git/
+.gitignore
+__pycache__/
+**/__pycache__/
+*.pyc
+
+# Flow planning trail — local-only, not part of the running app.
+flow/
+cards/
+docs/
+.flow/
+.claude/
+MODE
+PROJECT_TYPE
+
+# Bulk scan output the Results page never reads (per-test SARIF, run logs).
+results/**/*.sarif
+results/**/*.log

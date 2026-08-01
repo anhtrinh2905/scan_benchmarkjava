@@ -4,13 +4,20 @@ Run config (C-002), background execution (C-003), and results viewer (C-004) bel
 UI reorganized into a sidebar-navigated, multipage layout (Run Scan / Results /
 Knowledge Base) — all `scan_runner`/`kb_search` calls and their contracts are
 unchanged; this is a presentation-layer restructure only.
+
+C-012 adds the deploy surface: a shared-password gate and a read-only Run Scan page.
+Both are presentation only — the actual refusal to scan lives in `scan_runner`.
 """
+import hmac
+import os
 import shlex
 
 import streamlit as st
 
 import scan_runner
 from kb_search import search_kb
+
+PASSWORD_ENV_VAR = "APP_PASSWORD"
 
 STATUS_STATE = {"running": "running", "done": "complete", "failed": "error"}
 STATUS_LABEL = {"running": "Scan running", "done": "Scan complete", "failed": "Scan failed"}
@@ -19,6 +26,70 @@ STATUS_ICON = {
     "done": ":material/check_circle:",
     "failed": ":material/error:",
 }
+
+
+def configured_password() -> str | None:
+    """The shared secret, from Streamlit secrets first, then the environment."""
+    try:
+        secret = st.secrets[PASSWORD_ENV_VAR]
+    except Exception:
+        # st.secrets raises rather than returning a default when no secrets file
+        # exists at all, which is the normal local case.
+        secret = None
+    return (str(secret or "") or os.environ.get(PASSWORD_ENV_VAR, "")).strip() or None
+
+
+def password_accepted() -> bool:
+    """Whether the app may render anything at all.
+
+    Local runs with no password configured are ungated, exactly as before C-012. A
+    read-only (deployed) instance with no password configured refuses to serve instead
+    of serving openly, so a half-finished deploy is unreachable rather than public.
+    """
+    password = configured_password()
+    if password is None:
+        if scan_runner.runtime_mode() == "readonly":
+            st.error(
+                "This instance is not configured for public access: no access password "
+                "is set. Set APP_PASSWORD on the host and redeploy.",
+                icon=":material/lock:",
+            )
+            return False
+        return True
+
+    if st.session_state.get("password_ok"):
+        return True
+
+    st.title("Scan BenchmarkJava")
+    st.caption("Enter the access password to continue.")
+    with st.form("password_gate"):
+        attempt = st.text_input("Access password", type="password")
+        submitted = st.form_submit_button("Continue", type="primary")
+    if submitted:
+        if hmac.compare_digest(attempt.encode(), password.encode()):
+            st.session_state.password_ok = True
+            st.rerun()
+        else:
+            st.error("Incorrect password.", icon=":material/error:")
+    return False
+
+
+def render_readonly_run_notice() -> None:
+    st.title("Run Scan")
+    st.caption("Not available on this instance.")
+    with st.container(border=True):
+        st.markdown(
+            "This is a shared, read-only copy of the control panel. It holds no model "
+            "credentials and cannot start a scan, so nothing here can spend LLM budget."
+        )
+        st.markdown(
+            "**Results** and **Knowledge Base** show real output from scans already run. "
+            "To run a new scan, use a local checkout:"
+        )
+        st.code(
+            "uv sync\nuv run streamlit run app.py   # http://localhost:8501",
+            language="bash",
+        )
 
 
 @st.fragment(run_every=1)
@@ -43,6 +114,10 @@ def render_active_run_badge() -> None:
 
 
 def page_run_scan() -> None:
+    if scan_runner.runtime_mode() == "readonly":
+        render_readonly_run_notice()
+        return
+
     st.title("Run Scan")
     st.caption("Configure, review, and launch a Metis vs OWASP BenchmarkJava scan.")
 
@@ -51,7 +126,7 @@ def page_run_scan() -> None:
         left, right = st.columns(2)
         with left:
             kind = st.selectbox("Scan type", options=["bench", "sweep", "ablation"], key="run_kind")
-            sample = st.slider("Sample size", min_value=1, max_value=2740, value=100, key="run_sample")
+            sample = st.slider("Sample size", min_value=1, max_value=100, value=6, key="run_sample")
         with right:
             known_only = scan_runner.known_only_values(kind)
             if known_only:
@@ -123,6 +198,38 @@ def page_results() -> None:
         st.dataframe(bundle.compare_rows)
 
 
+@st.cache_data(show_spinner=False)
+def cached_search_kb(query: str, mode: str, top_k: int, min_score: float) -> list:
+    """Memoized `search_kb` so re-runs triggered by opening an expander (or nudging a
+    slider back to a previous value) don't recompute — and, in semantic mode, don't
+    spend a fresh embeddings call on an identical query."""
+    return search_kb(query, mode=mode, top_k=top_k, min_score=min_score)
+
+
+def render_kb_hit(hit) -> None:
+    """One compact result card: title + mono identifiers, the vulnerable snippet for
+    `examples` docs, and the full document behind an in-place expander."""
+    with st.container(border=True):
+        st.markdown(f"**{hit.title}**")
+        st.caption(f"`{hit.doc_id}` · score `{hit.score:.3f}`")
+        if hit.vulnerable_code:
+            st.code(hit.vulnerable_code, language="java")
+        else:
+            st.caption(hit.snippet)
+        with st.expander("Full document"):
+            st.markdown(hit.body)
+
+
+def render_kb_category(label: str, hits: list, category: str) -> None:
+    items = [hit for hit in hits if hit.category == category]
+    st.markdown(f"**{label}** · `{len(items)}`")
+    if not items:
+        st.caption("No matches in this category above the current threshold.")
+        return
+    for hit in items:
+        render_kb_hit(hit)
+
+
 def page_knowledge_base() -> None:
     st.title("Knowledge Base")
     st.caption("Search vulnerability documentation by keyword or semantic similarity.")
@@ -142,34 +249,73 @@ def page_knowledge_base() -> None:
             ) or "keyword"
         search_clicked = st.button("Search", type="primary", icon=":material/search:")
 
+        # Defaults beat configuration (DESIGN.md rule 3) — the two tuning knobs stay
+        # behind one disclosure so the default path is just query + mode + Search.
+        with st.expander("Search options"):
+            top_k = st.slider("Result limit (top-k)", 1, 20, 5, key="kb_top_k")
+            min_score = st.slider(
+                "Minimum similarity", 0.0, 1.0, 0.1, step=0.05, key="kb_min_score"
+            )
+            st.caption(
+                "Keyword scores run low (a strong match is often ~0.35), so a high "
+                "threshold will empty the results. Semantic scores run higher."
+            )
+
+    # Persist the searched query: opening an expander or moving a slider re-runs the
+    # script, and without this the results would vanish on the first interaction.
     if search_clicked and kb_query:
-        hits = search_kb(kb_query, mode=kb_mode)
-        if not hits:
-            st.info("No matching KB docs found.", icon=":material/info:")
-        else:
-            for hit in hits:
-                with st.container(border=True):
-                    title_col, score_col = st.columns([4, 1])
-                    title_col.markdown(f"**{hit.title}**  \n`{hit.doc_id}`")
-                    score_col.metric("Score", f"{hit.score:.2f}")
-                    st.caption(hit.snippet)
+        st.session_state.kb_active_query = kb_query
+    active_query = st.session_state.get("kb_active_query")
+    if not active_query:
+        return
+
+    hits = cached_search_kb(active_query, kb_mode, top_k, min_score)
+    if not hits:
+        st.info(
+            f"No KB docs matched “{active_query}” at similarity ≥ {min_score:.2f}.",
+            icon=":material/info:",
+        )
+        return
+
+    examples_col, side_col = st.columns([2, 1])
+    with examples_col:
+        render_kb_category("examples", hits, "examples")
+    with side_col:
+        render_kb_category("owasp-top10", hits, "owasp-top10")
+        st.markdown("")
+        render_kb_category("rules", hits, "rules")
 
 
 st.set_page_config(page_title="Scan BenchmarkJava", page_icon=":material/security:", layout="wide")
 
+# Nothing below runs until the gate passes, so no page, sidebar entry, scorecard or KB
+# text can reach an unauthenticated response.
+if not password_accepted():
+    st.stop()
+
+is_readonly = scan_runner.runtime_mode() == "readonly"
+
 st.sidebar.markdown("### :material/security: Scan BenchmarkJava")
 st.sidebar.caption("Metis vs OWASP BenchmarkJava")
 
+# A read-only instance lands on Results — the page it can actually serve — rather than
+# on a Run Scan page whose only content is why it is unavailable.
 pages = [
-    st.Page(page_run_scan, title="Run Scan", icon=":material/play_circle:", url_path="run", default=True),
-    st.Page(page_results, title="Results", icon=":material/bar_chart:", url_path="results"),
+    st.Page(page_run_scan, title="Run Scan", icon=":material/play_circle:", url_path="run",
+            default=not is_readonly),
+    st.Page(page_results, title="Results", icon=":material/bar_chart:", url_path="results",
+            default=is_readonly),
     st.Page(page_knowledge_base, title="Knowledge Base", icon=":material/search:", url_path="knowledge-base"),
 ]
 current_page = st.navigation(pages)
 
 with st.sidebar:
     st.divider()
-    st.caption("Active run")
-    render_active_run_badge()
+    if is_readonly:
+        st.caption("Read-only instance")
+        st.markdown(":material/lock: **Scans disabled**")
+    else:
+        st.caption("Active run")
+        render_active_run_badge()
 
 current_page.run()
