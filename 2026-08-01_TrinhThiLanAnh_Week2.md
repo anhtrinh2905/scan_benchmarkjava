@@ -1,10 +1,13 @@
-# Chuẩn hóa kết quả quét và xây kho tri thức
+# Chuẩn hóa kết quả quét, kho tri thức, và bảng so sánh chéo
 
 ## Mục tiêu
 
-Chuyển kết quả thô của công cụ quét (Semgrep, Metis) về **một cấu trúc chung**, gom vào một
-tệp duy nhất, kèm một **kho tri thức nhỏ** và **chức năng tìm kiếm** để AI Agent tra cứu
-theo tên lỗ hổng.
+1. Chuyển kết quả thô của công cụ quét (Semgrep, Metis) về **một cấu trúc chung**, gom vào
+  một tệp duy nhất, kèm một **kho tri thức nhỏ** và **chức năng tìm kiếm** để AI Agent tra
+   cứu theo tên lỗ hổng. *(phần 1–4)*
+2. Đưa toàn bộ kết quả đã có lên **một bảng so sánh chéo** - 100 file test × 15 lần scan -
+  để trả lời được câu hỏi mà từng scorecard riêng lẻ không trả lời được: *file nào Metis
+   bỏ sót dù cấu hình thế nào?* Kèm việc dựng lại trang Results theo dạng lưới. *(phần 5–6)*
 
 Sản phẩm được deploy tại: [https://scan-benchmarkjava-production.up.railway.app/](https://scan-benchmarkjava-production.up.railway.app/)
 
@@ -58,6 +61,8 @@ Chuẩn hoá kết quả quét của các tool và variant khác nhau thành 1 d
 | Theo mức: medium / high / critical / low | 45 / 36 / 21 / 9 |
 
 
+
+
 ## 3. Kho tri thức nhỏ — `kb/docs/`
 
 23 file markdown, mỗi file có frontmatter `id` / `title` / `category`:
@@ -105,14 +110,21 @@ Hàm này được nối vào trang **Knowledge Base** của app Streamlit: gõ 
 keyword/semantic → kết quả gom nhóm theo `examples` / `owasp-top10` / `rules`, kèm sẵn
 đoạn code lỗi và toàn văn tài liệu.
 
-## Sản phẩm bàn giao
+## 5. Trang Matrix — so sánh chéo toàn bộ lần scan
 
+Trang **Matrix** gom tất cả vào **một bảng duy nhất**: hàng là 100 file
+`BenchmarkTest00001` → `BenchmarkTest00100`, cột là 15 lần scan (6 bench + 5 sweep +
+4 ablation). Mỗi ô là kết quả của run đó trên file đó.
 
-| Yêu cầu                             | Tệp                                                                    |
-| ----------------------------------- | ---------------------------------------------------------------------- |
-| Chương trình chuẩn hóa dữ liệu      | `alert_normalizer.py`                                                  |
-| Tệp dữ liệu tổng hợp các cảnh báo   | `kb/alerts.jsonl` (111 dòng)                                           |
-| Kho tri thức nhỏ                    | `kb/docs/` (23 file: 10 OWASP + 3 rules + 10 examples)                 |
-| Chức năng tìm kiếm theo tên lỗ hổng | `kb_search.py` → `search_kb()`, và trang Knowledge Base trong `app.py` |
+```mermaid
+flowchart LR
+  B["6 × bench<br/>bench_summary.json"] --> M["scan_runner.load_matrix()"]
+  S["5 × sweep<br/>detail.json"] --> M
+  A["4 × ablation<br/>detail.json"] --> M
+  M --> X["Matrix<br/>100 hàng × 15 cột = 600 ô"]
+  X --> F["filter_matrix()<br/>lọc cả hàng và cột"]
+  F --> T["bảng + CSV"]
+```
+
 
 

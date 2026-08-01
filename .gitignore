@@ -16,6 +16,11 @@ results/**
 !results/**/compare.md
 !results/**/compare.csv
 !results/**/compare.json
+# ADR 20 — the Matrix page (FR14) needs per-test ground truth from every run. bench runs
+# carry it in bench_summary.json (above); sweep variants and ablation arms carry it ONLY
+# in detail.json. Untracked means absent from the Railway build context, which would make
+# the deployed Matrix show 6 columns instead of 15 with no visible signal. 612 KB, 9 files.
+!results/**/detail.json
 .vscode/
 .idea/
 .DS_Store

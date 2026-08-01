@@ -3,6 +3,10 @@ name = "scan-benchmarkjava"
 version = "0.1.0"
 requires-python = ">=3.11"
 dependencies = [
+    # Already installed transitively (Streamlit requires it), but v1.5's Matrix page is
+    # the first code to `import pandas` directly — so it stops being an undeclared
+    # transitive and becomes a stated dependency. See flow/05-contract.md, v1.5.
+    "pandas>=2.2",
     "requests>=2.34.2",
     "scikit-learn>=1.9.0",
     "streamlit>=1.60.0",

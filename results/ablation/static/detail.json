@@ -1,0 +1,1107 @@
+{
+  "arm": "static",
+  "spec": {
+    "tools": "navigation",
+    "command": "triage",
+    "triage": false,
+    "engine": "semgrep+metis",
+    "note": "C — Semgrep tìm, LLM chỉ verify"
+  },
+  "semgrep_rulesets": [
+    "p/java",
+    "p/owasp-top-ten",
+    "/Users/trinhthilananh/Desktop/Personal/vinsoc/week2/scan_benchmarkjava/rules/benchmarkjava"
+  ],
+  "wall_clock_seconds": 186.92,
+  "semgrep_seconds": 4.53,
+  "semgrep_stats": {
+    "results": 39,
+    "with_cwe": 39,
+    "results_without_cwe": 0,
+    "rule_unknown": 0,
+    "rules_without_cwe": [],
+    "rules_unknown": []
+  },
+  "usage": {
+    "input_tokens": 692314,
+    "output_tokens": 69045,
+    "total_tokens": 761359,
+    "duration_seconds": 184.99
+  },
+  "triage_precision": {
+    "with_status": 39,
+    "tp_like": 34,
+    "fp_like": 4,
+    "inconclusive": 1,
+    "precision": 0.8947368421052632
+  },
+  "ground_truth": {
+    "strict": {
+      "TP": 29,
+      "FP": 0,
+      "FN": 3,
+      "TN": 4,
+      "precision": 1.0,
+      "recall": 0.90625,
+      "fpr": 0.0,
+      "youden": 0.90625
+    },
+    "lenient": {
+      "TP": 28,
+      "FP": 0,
+      "FN": 4,
+      "TN": 4,
+      "precision": 1.0,
+      "recall": 0.875,
+      "fpr": 0.0,
+      "youden": 0.875
+    },
+    "per_test": {
+      "BenchmarkTest00001": {
+        "expected": true,
+        "strict": true,
+        "lenient": true,
+        "outcome_strict": "TP",
+        "outcome_lenient": "TP",
+        "on_target": 1,
+        "off_target": 0,
+        "total": 1,
+        "dismissed": 0,
+        "inconclusive": 0,
+        "findings": [
+          {
+            "cwe_raw": "CWE-22",
+            "cwes": [
+              22
+            ],
+            "severity": null,
+            "status": "valid",
+            "triaged": true,
+            "triage_reason": "Verdict: Path traversal is valid — attacker-controlled cookie value flows unsanitized into a file path opened by FileInputStream. Evidence: param is read and URL-decoded from request cookie at BenchmarkTest00001.java:61, concatenated into fileName at line 71, and used as the file path at line 72 with no sanitization, allowlist, or traversal rejection in between. Gap: none.",
+            "rule_id": "java.lang.security.httpservlet-path-traversal.httpservlet-path-traversal",
+            "line": 72,
+            "snippet": "            fis = new java.io.FileInputStream(new java.io.File(fileName));",
+            "issue": "Detected a potential path traversal. A malicious actor could control the location of this file, to include going backwards in the directory with '../'. To address this, ensure that user-controlled variables in file paths are sanitized. You may also consider using a utility method such as org.apache.commons.io.FilenameUtils.getName(...) to only retrieve the file name from the path."
+          }
+        ]
+      },
+      "BenchmarkTest00002": {
+        "expected": true,
+        "strict": true,
+        "lenient": true,
+        "outcome_strict": "TP",
+        "outcome_lenient": "TP",
+        "on_target": 2,
+        "off_target": 0,
+        "total": 2,
+        "dismissed": 0,
+        "inconclusive": 0,
+        "findings": [
+          {
+            "cwe_raw": "CWE-22",
+            "cwes": [
+              22
+            ],
+            "severity": null,
+            "status": "valid",
+            "triaged": true,
+            "triage_reason": "Verdict: The finding is valid; user-controlled cookie data flows unsanitized into a FileOutputStream path. Evidence: doPost reads the URL-decoded cookie value into param at line 61, concatenates it with TESTFILES_DIR at line 71, and passes the resulting fileName directly to new java.io.FileOutputStream(fileName, false) at line 73 with no path sanitization, canonicalization, or allowlist check between the source and sink. Gap: none.",
+            "rule_id": "java.lang.security.httpservlet-path-traversal.httpservlet-path-traversal",
+            "line": 73,
+            "snippet": "            fos = new java.io.FileOutputStream(fileName, false);",
+            "issue": "Detected a potential path traversal. A malicious actor could control the location of this file, to include going backwards in the directory with '../'. To address this, ensure that user-controlled variables in file paths are sanitized. You may also consider using a utility method such as org.apache.commons.io.FilenameUtils.getName(...) to only retrieve the file name from the path."
+          },
+          {
+            "cwe_raw": "CWE-22",
+            "cwes": [
+              22
+            ],
+            "severity": null,
+            "status": "valid",
+            "triaged": true,
+            "triage_reason": "Verdict: The path traversal finding is valid even though the reported line 86 (`fos = null`) is in the finally-block cleanup; the actual taint sink is at line 73. Evidence: user-controlled cookie value is decoded into `param` (line 61), concatenated into `fileName = Utils.TESTFILES_DIR + param` (line 71), and passed directly to `new java.io.FileOutputStream(fileName, false)` (line 73) with no sanitization. Gap: none.",
+            "rule_id": "java.lang.security.httpservlet-path-traversal.httpservlet-path-traversal",
+            "line": 86,
+            "snippet": "                    fos = null;",
+            "issue": "Detected a potential path traversal. A malicious actor could control the location of this file, to include going backwards in the directory with '../'. To address this, ensure that user-controlled variables in file paths are sanitized. You may also consider using a utility method such as org.apache.commons.io.FilenameUtils.getName(...) to only retrieve the file name from the path."
+          }
+        ]
+      },
+      "BenchmarkTest00003": {
+        "expected": true,
+        "strict": false,
+        "lenient": false,
+        "outcome_strict": "FN",
+        "outcome_lenient": "FN",
+        "on_target": 0,
+        "off_target": 0,
+        "total": 0,
+        "dismissed": 0,
+        "inconclusive": 0,
+        "findings": []
+      },
+      "BenchmarkTest00004": {
+        "expected": true,
+        "strict": false,
+        "lenient": false,
+        "outcome_strict": "FN",
+        "outcome_lenient": "FN",
+        "on_target": 0,
+        "off_target": 0,
+        "total": 1,
+        "dismissed": 1,
+        "inconclusive": 0,
+        "findings": [
+          {
+            "cwe_raw": "CWE-79",
+            "cwes": [
+              79
+            ],
+            "severity": null,
+            "status": "invalid",
+            "triaged": true,
+            "triage_reason": "Verdict: The reported direct-response-writer XSS is invalid because param is HTML-encoded before being written. Evidence: line 73 wraps param with Utils.encodeForHTML before the concatenated string is passed to response.getWriter().println at lines 70-74. Gap: none.",
+            "rule_id": "java.lang.security.audit.xss.no-direct-response-writer.no-direct-response-writer",
+            "line": 70,
+            "snippet": "        response.getWriter()\n                .println(\n                        \"Item: '\"\n                                + org.owasp.benchmark.helpers.Utils.encodeForHTML(param)\n                                + \"' with value: '10340' saved in session.\");",
+            "issue": "Detected a request with potential user-input going into a OutputStream or Writer object. This bypasses any view or template environments, including HTML escaping, which may expose this application to cross-site scripting (XSS) vulnerabilities. Consider using a view technology such as JavaServer Faces (JSFs) which automatically escapes HTML views."
+          }
+        ]
+      },
+      "BenchmarkTest00005": {
+        "expected": true,
+        "strict": true,
+        "lenient": true,
+        "outcome_strict": "TP",
+        "outcome_lenient": "TP",
+        "on_target": 3,
+        "off_target": 0,
+        "total": 3,
+        "dismissed": 1,
+        "inconclusive": 0,
+        "findings": [
+          {
+            "cwe_raw": "CWE-326",
+            "cwes": [
+              326
+            ],
+            "severity": null,
+            "status": "valid",
+            "triaged": true,
+            "triage_reason": "Verdict: The finding is valid; the code directly requests the deprecated DES cipher. Evidence: src/main/java/org/owasp/benchmark/testcode/BenchmarkTest00005.java:63 calls javax.crypto.Cipher.getInstance(\"DES/CBC/PKCS5Padding\"), and line 66 also derives the key with KeyGenerator.getInstance(\"DES\"), confirming DES is the algorithm in use with no mitigation or alternative cipher selection. Gap: none.",
+            "rule_id": "java.lang.security.audit.crypto.des-is-deprecated.des-is-deprecated",
+            "line": 63,
+            "snippet": "            javax.crypto.Cipher c = javax.crypto.Cipher.getInstance(\"DES/CBC/PKCS5Padding\");",
+            "issue": "DES is considered deprecated. AES is the recommended cipher. Upgrade to use AES. See https://www.nist.gov/news-events/news/2005/06/nist-withdraws-outdated-data-encryption-standard for more information."
+          },
+          {
+            "cwe_raw": "CWE-326",
+            "cwes": [
+              326
+            ],
+            "severity": null,
+            "status": "invalid",
+            "triaged": true,
+            "triage_reason": "Verdict: The finding is invalid because the code uses single DES, not Triple DES (DESede/3DES) as the rule claims. Evidence: The reported line calls KeyGenerator.getInstance(\"DES\") and line 63 uses Cipher.getInstance(\"DES/CBC/PKCS5Padding\"), with grep confirming only \"DES\" (no \"DESede\"/\"TripleDES\") anywhere in the file, contradicting the rule's Triple-DES premise. Gap: none.",
+            "rule_id": "java.lang.security.audit.crypto.desede-is-deprecated.desede-is-deprecated",
+            "line": 66,
+            "snippet": "            javax.crypto.SecretKey key = javax.crypto.KeyGenerator.getInstance(\"DES\").generateKey();",
+            "issue": "Triple DES (3DES or DESede) is considered deprecated. AES is the recommended cipher. Upgrade to use AES."
+          },
+          {
+            "cwe_raw": "CWE-326",
+            "cwes": [
+              326
+            ],
+            "severity": null,
+            "status": "valid",
+            "triaged": true,
+            "triage_reason": "Verdict: The code directly instantiates a DES key generator and DES cipher without any fallback or AES usage, so the deprecated-crypto finding holds. Evidence: line 66 calls javax.crypto.KeyGenerator.getInstance(\"DES\").generateKey(), and line 63 requests Cipher.getInstance(\"DES/CBC/PKCS5Padding\"), confirming DES is the actual algorithm in use. Gap: none.",
+            "rule_id": "java.lang.security.audit.crypto.des-is-deprecated.des-is-deprecated",
+            "line": 66,
+            "snippet": "            javax.crypto.SecretKey key = javax.crypto.KeyGenerator.getInstance(\"DES\").generateKey();",
+            "issue": "DES is considered deprecated. AES is the recommended cipher. Upgrade to use AES. See https://www.nist.gov/news-events/news/2005/06/nist-withdraws-outdated-data-encryption-standard for more information."
+          }
+        ]
+      },
+      "BenchmarkTest00006": {
+        "expected": true,
+        "strict": true,
+        "lenient": true,
+        "outcome_strict": "TP",
+        "outcome_lenient": "TP",
+        "on_target": 1,
+        "off_target": 0,
+        "total": 1,
+        "dismissed": 0,
+        "inconclusive": 0,
+        "findings": [
+          {
+            "cwe_raw": "CWE-78",
+            "cwes": [
+              78
+            ],
+            "severity": null,
+            "status": "valid",
+            "triaged": true,
+            "triage_reason": "Verdict: HTTP header input flows unsanitized into a ProcessBuilder shell command, enabling command injection. Evidence: param is taken from request.getHeader at line 46, URL-decoded only (line 50), concatenated into 'echo ' + param (line 62), passed to ProcessBuilder.command(argList) (line 66), and executed via pb.start() (line 69), with no escaping, validation, or allowlist in between. Gap: none.",
+            "rule_id": "java.lang.security.audit.tainted-cmd-from-http-request.tainted-cmd-from-http-request",
+            "line": 62,
+            "snippet": "        argList.add(\"echo \" + param);",
+            "issue": "Detected input from a HTTPServletRequest going into a 'ProcessBuilder' or 'exec' command. This could lead to command injection if variables passed into the exec commands are not properly sanitized. Instead, avoid using these OS commands with user-supplied input, or, if you must use these commands, use a whitelist of specific values."
+          }
+        ]
+      },
+      "BenchmarkTest00007": {
+        "expected": true,
+        "strict": true,
+        "lenient": true,
+        "outcome_strict": "TP",
+        "outcome_lenient": "TP",
+        "on_target": 1,
+        "off_target": 0,
+        "total": 1,
+        "dismissed": 0,
+        "inconclusive": 0,
+        "findings": [
+          {
+            "cwe_raw": "CWE-78",
+            "cwes": [
+              78
+            ],
+            "severity": null,
+            "status": "valid",
+            "triaged": true,
+            "triage_reason": "Verdict: Tainted HTTP request data flows unmodified into Runtime.exec, a command-execution sink. Evidence: request.getHeader(\"BenchmarkTest00007\") at src/main/java/org/owasp/benchmark/testcode/BenchmarkTest00007.java:45-46 assigns the header into param; line 50 only URL-decodes it (no injection sanitization/whitelist); line 56 packages param into argsEnv; line 61 passes argsEnv to r.exec(args, argsEnv), matching the reported sink. Gap: none — the source-to-sink chain is fully visible in the file with no sanitizing guard in between.",
+            "rule_id": "java.lang.security.audit.tainted-cmd-from-http-request.tainted-cmd-from-http-request",
+            "line": 61,
+            "snippet": "            Process p = r.exec(args, argsEnv);",
+            "issue": "Detected input from a HTTPServletRequest going into a 'ProcessBuilder' or 'exec' command. This could lead to command injection if variables passed into the exec commands are not properly sanitized. Instead, avoid using these OS commands with user-supplied input, or, if you must use these commands, use a whitelist of specific values."
+          }
+        ]
+      },
+      "BenchmarkTest00008": {
+        "expected": true,
+        "strict": true,
+        "lenient": true,
+        "outcome_strict": "TP",
+        "outcome_lenient": "TP",
+        "on_target": 1,
+        "off_target": 0,
+        "total": 1,
+        "dismissed": 0,
+        "inconclusive": 0,
+        "findings": [
+          {
+            "cwe_raw": "CWE-89",
+            "cwes": [
+              89
+            ],
+            "severity": null,
+            "status": "valid",
+            "triaged": true,
+            "triage_reason": "Verdict: HTTP header input flows unvalidated into a dynamically concatenated SQL string passed to prepareCall, enabling SQL injection. Evidence: param is read from request.getHeader at BenchmarkTest00008.java:46, only URL-decoded at line 50, concatenated into \"{call \" + param + \"}\" at line 52, and passed to connection.prepareCall(sql) at line 57 (executed at line 58); no parameterization, sanitization, escaping, or allowlist exists in the method. Gap: none.",
+            "rule_id": "java.lang.security.audit.sqli.tainted-sql-from-http-request.tainted-sql-from-http-request",
+            "line": 57,
+            "snippet": "            java.sql.CallableStatement statement = connection.prepareCall(sql);",
+            "issue": "Detected input from a HTTPServletRequest going into a SQL sink or statement. This could lead to SQL injection if variables in the SQL statement are not properly sanitized. Use parameterized SQL queries or properly sanitize user input instead."
+          }
+        ]
+      },
+      "BenchmarkTest00009": {
+        "expected": false,
+        "strict": false,
+        "lenient": false,
+        "outcome_strict": "TN",
+        "outcome_lenient": "TN",
+        "on_target": 0,
+        "off_target": 0,
+        "total": 0,
+        "dismissed": 0,
+        "inconclusive": 0,
+        "findings": []
+      },
+      "BenchmarkTest00010": {
+        "expected": false,
+        "strict": false,
+        "lenient": false,
+        "outcome_strict": "TN",
+        "outcome_lenient": "TN",
+        "on_target": 0,
+        "off_target": 0,
+        "total": 0,
+        "dismissed": 0,
+        "inconclusive": 0,
+        "findings": []
+      },
+      "BenchmarkTest00011": {
+        "expected": true,
+        "strict": true,
+        "lenient": true,
+        "outcome_strict": "TP",
+        "outcome_lenient": "TP",
+        "on_target": 1,
+        "off_target": 0,
+        "total": 1,
+        "dismissed": 0,
+        "inconclusive": 0,
+        "findings": [
+          {
+            "cwe_raw": "CWE-22",
+            "cwes": [
+              22
+            ],
+            "severity": null,
+            "status": "valid",
+            "triaged": true,
+            "triage_reason": "Verdict: user-controlled HTTP header value reaches a java.io.File path constructor with no sanitization, so the path-traversal finding is valid. Evidence: param originates from request.getHeaders(\"BenchmarkTest00011\") (line 45), is taken as-is at line 48, only URL-decoded at line 52, then used directly as the parent directory in new java.io.File(param, \"/Test.txt\") at line 54, with no FilenameUtils/canonicalization/allowlist guard anywhere in the method; the resulting fileTarget is then used at line 64 (fileTarget.exists()), making the attacker-controlled file location observable. Gap: none.",
+            "rule_id": "java.lang.security.httpservlet-path-traversal.httpservlet-path-traversal",
+            "line": 54,
+            "snippet": "        java.io.File fileTarget = new java.io.File(param, \"/Test.txt\");",
+            "issue": "Detected a potential path traversal. A malicious actor could control the location of this file, to include going backwards in the directory with '../'. To address this, ensure that user-controlled variables in file paths are sanitized. You may also consider using a utility method such as org.apache.commons.io.FilenameUtils.getName(...) to only retrieve the file name from the path."
+          }
+        ]
+      },
+      "BenchmarkTest00012": {
+        "expected": true,
+        "strict": true,
+        "lenient": true,
+        "outcome_strict": "TP",
+        "outcome_lenient": "TP",
+        "on_target": 1,
+        "off_target": 0,
+        "total": 1,
+        "dismissed": 0,
+        "inconclusive": 0,
+        "findings": [
+          {
+            "cwe_raw": "CWE-90",
+            "cwes": [
+              90
+            ],
+            "severity": null,
+            "status": "valid",
+            "triaged": true,
+            "triage_reason": "Verdict: LDAP injection is valid — HTTP header input flows unsanitized into an LDAP search filter built by string concatenation. Evidence: request header value is assigned to param (BenchmarkTest00012.java:45-48), URL-decoded only (line 52), concatenated into the LDAP filter (line 60), then passed to idc.search(base, filter, filters, sc) (line 68) with no escaping or validation. Gap: none.",
+            "rule_id": "java.lang.security.audit.tainted-ldapi-from-http-request.tainted-ldapi-from-http-request",
+            "line": 68,
+            "snippet": "                    idc.search(base, filter, filters, sc);",
+            "issue": "Detected input from a HTTPServletRequest going into an LDAP query. This could lead to LDAP injection if the input is not properly sanitized, which could result in attackers modifying objects in the LDAP tree structure. Ensure data passed to an LDAP query is not controllable or properly sanitize the data."
+          }
+        ]
+      },
+      "BenchmarkTest00013": {
+        "expected": true,
+        "strict": true,
+        "lenient": true,
+        "outcome_strict": "TP",
+        "outcome_lenient": "TP",
+        "on_target": 1,
+        "off_target": 0,
+        "total": 1,
+        "dismissed": 0,
+        "inconclusive": 0,
+        "findings": [
+          {
+            "cwe_raw": "CWE-79",
+            "cwes": [
+              79
+            ],
+            "severity": null,
+            "status": "valid",
+            "triaged": true,
+            "triage_reason": "Verdict: The finding is valid — user-controlled Referer header data flows unescaped into the HTTP response Writer via format(), enabling reflected XSS. Evidence: param is read from request.getHeaders(\"Referer\") (BenchmarkTest00013.java:45-48), URL-decoded without any HTML escaping (line 52), and written directly with response.getWriter().format(Locale.US, param, obj) (line 56) into a text/html response (line 42), bypassing any template/view escaping. Gap: none.",
+            "rule_id": "java.lang.security.audit.xss.no-direct-response-writer.no-direct-response-writer",
+            "line": 56,
+            "snippet": "        response.getWriter().format(java.util.Locale.US, param, obj);",
+            "issue": "Detected a request with potential user-input going into a OutputStream or Writer object. This bypasses any view or template environments, including HTML escaping, which may expose this application to cross-site scripting (XSS) vulnerabilities. Consider using a view technology such as JavaServer Faces (JSFs) which automatically escapes HTML views."
+          }
+        ]
+      },
+      "BenchmarkTest00014": {
+        "expected": true,
+        "strict": true,
+        "lenient": true,
+        "outcome_strict": "TP",
+        "outcome_lenient": "TP",
+        "on_target": 1,
+        "off_target": 0,
+        "total": 1,
+        "dismissed": 0,
+        "inconclusive": 0,
+        "findings": [
+          {
+            "cwe_raw": "CWE-79",
+            "cwes": [
+              79
+            ],
+            "severity": null,
+            "status": "valid",
+            "triaged": true,
+            "triage_reason": "Verdict: User-controlled Referer header is URL-decoded and written unescaped to the HTML response via response.getWriter().format(), a direct writer sink that bypasses template escaping. Evidence: param originates from request.getHeaders(\"Referer\") at src/main/java/org/owasp/benchmark/testcode/BenchmarkTest00014.java:45-48, is only URL-decoded at line 52 (no HTML escaping), the response is text/html at line 42 with X-XSS-Protection disabled at line 54, and the raw sink is at line 56. Gap: none.",
+            "rule_id": "java.lang.security.audit.xss.no-direct-response-writer.no-direct-response-writer",
+            "line": 56,
+            "snippet": "        response.getWriter().format(param, obj);",
+            "issue": "Detected a request with potential user-input going into a OutputStream or Writer object. This bypasses any view or template environments, including HTML escaping, which may expose this application to cross-site scripting (XSS) vulnerabilities. Consider using a view technology such as JavaServer Faces (JSFs) which automatically escapes HTML views."
+          }
+        ]
+      },
+      "BenchmarkTest00015": {
+        "expected": true,
+        "strict": true,
+        "lenient": true,
+        "outcome_strict": "TP",
+        "outcome_lenient": "TP",
+        "on_target": 1,
+        "off_target": 0,
+        "total": 1,
+        "dismissed": 0,
+        "inconclusive": 0,
+        "findings": [
+          {
+            "cwe_raw": "CWE-78",
+            "cwes": [
+              78
+            ],
+            "severity": null,
+            "status": "valid",
+            "triaged": true,
+            "triage_reason": "Verdict: The finding is valid — attacker-controlled HTTP header data is concatenated into a shell command argument and executed via ProcessBuilder without any sanitization. Evidence: `param` is taken directly from `request.getHeaders(\"BenchmarkTest00015\")` (line 45-48), only URL-decoded (line 52) with no validation/whitelist/escaping, then concatenated into `argList.add(\"echo \" + param)` (line 64), which is passed to `pb.command(argList)` (line 68) and executed via `pb.start()` (line 71). Gap: none.",
+            "rule_id": "java.lang.security.audit.tainted-cmd-from-http-request.tainted-cmd-from-http-request",
+            "line": 64,
+            "snippet": "        argList.add(\"echo \" + param);",
+            "issue": "Detected input from a HTTPServletRequest going into a 'ProcessBuilder' or 'exec' command. This could lead to command injection if variables passed into the exec commands are not properly sanitized. Instead, avoid using these OS commands with user-supplied input, or, if you must use these commands, use a whitelist of specific values."
+          }
+        ]
+      },
+      "BenchmarkTest00016": {
+        "expected": false,
+        "strict": false,
+        "lenient": false,
+        "outcome_strict": "TN",
+        "outcome_lenient": "TN",
+        "on_target": 0,
+        "off_target": 0,
+        "total": 0,
+        "dismissed": 0,
+        "inconclusive": 0,
+        "findings": []
+      },
+      "BenchmarkTest00017": {
+        "expected": true,
+        "strict": true,
+        "lenient": true,
+        "outcome_strict": "TP",
+        "outcome_lenient": "TP",
+        "on_target": 1,
+        "off_target": 0,
+        "total": 1,
+        "dismissed": 0,
+        "inconclusive": 0,
+        "findings": [
+          {
+            "cwe_raw": "CWE-78",
+            "cwes": [
+              78
+            ],
+            "severity": null,
+            "status": "valid",
+            "triaged": true,
+            "triage_reason": "Verdict: The finding is valid because a request-derived value named `param` is concatenated into a runtime exec command at line 63. Evidence: The `param` variable is assigned from `request.getParameter(\"BenchmarkTest00017\")` earlier in the method and then used directly in `r.exec(cmd + param)`. Gap: none.",
+            "rule_id": "java.lang.security.audit.tainted-cmd-from-http-request.tainted-cmd-from-http-request",
+            "line": 63,
+            "snippet": "            Process p = r.exec(cmd + param);",
+            "issue": "Detected input from a HTTPServletRequest going into a 'ProcessBuilder' or 'exec' command. This could lead to command injection if variables passed into the exec commands are not properly sanitized. Instead, avoid using these OS commands with user-supplied input, or, if you must use these commands, use a whitelist of specific values."
+          }
+        ]
+      },
+      "BenchmarkTest00018": {
+        "expected": true,
+        "strict": true,
+        "lenient": true,
+        "outcome_strict": "TP",
+        "outcome_lenient": "TP",
+        "on_target": 1,
+        "off_target": 0,
+        "total": 1,
+        "dismissed": 0,
+        "inconclusive": 0,
+        "findings": [
+          {
+            "cwe_raw": "CWE-89",
+            "cwes": [
+              89
+            ],
+            "severity": null,
+            "status": "valid",
+            "triaged": true,
+            "triage_reason": "Verdict: The finding is valid because a request-controlled value is concatenated into a SQL string and executed via executeUpdate. Evidence: The method obtains `param` from a request header, constructs `sql` by direct string concatenation at line 54, and calls `statement.executeUpdate(sql)` at line 59. Gap: none.",
+            "rule_id": "java.lang.security.audit.sqli.tainted-sql-from-http-request.tainted-sql-from-http-request",
+            "line": 57,
+            "snippet": "            java.sql.Statement statement =\n                    org.owasp.benchmark.helpers.DatabaseHelper.getSqlStatement();\n            int count = statement.executeUpdate(sql);",
+            "issue": "Detected input from a HTTPServletRequest going into a SQL sink or statement. This could lead to SQL injection if variables in the SQL statement are not properly sanitized. Use parameterized SQL queries or properly sanitize user input instead."
+          }
+        ]
+      },
+      "BenchmarkTest00019": {
+        "expected": true,
+        "strict": true,
+        "lenient": true,
+        "outcome_strict": "TP",
+        "outcome_lenient": "TP",
+        "on_target": 2,
+        "off_target": 0,
+        "total": 2,
+        "dismissed": 0,
+        "inconclusive": 0,
+        "findings": [
+          {
+            "cwe_raw": "CWE-326",
+            "cwes": [
+              326
+            ],
+            "severity": null,
+            "status": "valid",
+            "triaged": true,
+            "triage_reason": "Verdict: The code uses deprecated DES-family (DESede/3DES and DES) cryptography, confirming the finding. Evidence: line 50 defaults the cipher algorithm to \"DESede/ECB/PKCS5Padding\", line 51 instantiates the Cipher with that algorithm, and line 54 generates a DES key, with no AES fallback or guard. Gap: none.",
+            "rule_id": "java.lang.security.audit.crypto.desede-is-deprecated.desede-is-deprecated",
+            "line": 54,
+            "snippet": "            javax.crypto.SecretKey key = javax.crypto.KeyGenerator.getInstance(\"DES\").generateKey();",
+            "issue": "Triple DES (3DES or DESede) is considered deprecated. AES is the recommended cipher. Upgrade to use AES."
+          },
+          {
+            "cwe_raw": "CWE-326",
+            "cwes": [
+              326
+            ],
+            "severity": null,
+            "status": "valid",
+            "triaged": true,
+            "triage_reason": "Verdict: The finding is valid; line 54 unconditionally invokes KeyGenerator.getInstance(\"DES\"), a deprecated algorithm per NIST, with no compensating guard. Evidence: FILE_WINDOW lines 48-60 and HIT_CONTEXT 47-55 confirm the exact statement `javax.crypto.SecretKey key = javax.crypto.KeyGenerator.getInstance(\"DES\").generateKey();` at src/main/java/org/owasp/benchmark/testcode/BenchmarkTest00019.java:54, and the surrounding code shows no allowlist, property override, or alternative path affecting this call. Gap: none.",
+            "rule_id": "java.lang.security.audit.crypto.des-is-deprecated.des-is-deprecated",
+            "line": 54,
+            "snippet": "            javax.crypto.SecretKey key = javax.crypto.KeyGenerator.getInstance(\"DES\").generateKey();",
+            "issue": "DES is considered deprecated. AES is the recommended cipher. Upgrade to use AES. See https://www.nist.gov/news-events/news/2005/06/nist-withdraws-outdated-data-encryption-standard for more information."
+          }
+        ]
+      },
+      "BenchmarkTest00020": {
+        "expected": true,
+        "strict": true,
+        "lenient": true,
+        "outcome_strict": "TP",
+        "outcome_lenient": "TP",
+        "on_target": 2,
+        "off_target": 0,
+        "total": 2,
+        "dismissed": 0,
+        "inconclusive": 0,
+        "findings": [
+          {
+            "cwe_raw": "CWE-326",
+            "cwes": [
+              326
+            ],
+            "severity": null,
+            "status": "valid",
+            "triaged": true,
+            "triage_reason": "Verdict: The reported deprecated DES usage is present exactly as described. Evidence: Line 61 calls javax.crypto.KeyGenerator.getInstance(\"DES\").generateKey() and line 59 configures Cipher with \"DES/CBC/PKCS5Padding\", confirming deprecated DES-family symmetric crypto with no alternate algorithm selection or guard. Gap: none.",
+            "rule_id": "java.lang.security.audit.crypto.desede-is-deprecated.desede-is-deprecated",
+            "line": 61,
+            "snippet": "            javax.crypto.SecretKey key = javax.crypto.KeyGenerator.getInstance(\"DES\").generateKey();",
+            "issue": "Triple DES (3DES or DESede) is considered deprecated. AES is the recommended cipher. Upgrade to use AES."
+          },
+          {
+            "cwe_raw": "CWE-326",
+            "cwes": [
+              326
+            ],
+            "severity": null,
+            "status": "valid",
+            "triaged": true,
+            "triage_reason": "Verdict: The reported line directly instantiates a DES key generator, so the finding is valid. Evidence: src/main/java/org/owasp/benchmark/testcode/BenchmarkTest00020.java:61 calls javax.crypto.KeyGenerator.getInstance(\"DES\").generateKey(), and the same method also selects the DES cipher at line 59 (Cipher.getInstance(\"DES/CBC/PKCS5Padding\", \"SunJCE\")), with the generated key used to init the cipher at line 64; no AES fallback, sanitizer, or guard exists in the method. Gap: none.",
+            "rule_id": "java.lang.security.audit.crypto.des-is-deprecated.des-is-deprecated",
+            "line": 61,
+            "snippet": "            javax.crypto.SecretKey key = javax.crypto.KeyGenerator.getInstance(\"DES\").generateKey();",
+            "issue": "DES is considered deprecated. AES is the recommended cipher. Upgrade to use AES. See https://www.nist.gov/news-events/news/2005/06/nist-withdraws-outdated-data-encryption-standard for more information."
+          }
+        ]
+      },
+      "BenchmarkTest00021": {
+        "expected": true,
+        "strict": true,
+        "lenient": true,
+        "outcome_strict": "TP",
+        "outcome_lenient": "TP",
+        "on_target": 1,
+        "off_target": 0,
+        "total": 1,
+        "dismissed": 0,
+        "inconclusive": 0,
+        "findings": [
+          {
+            "cwe_raw": "CWE-90",
+            "cwes": [
+              90
+            ],
+            "severity": null,
+            "status": "valid",
+            "triaged": true,
+            "triage_reason": "Verdict: HTTP request parameter `param` is concatenated directly into an LDAP search filter and passed to `ctx.search`, with no sanitization, enabling LDAP injection. Evidence: `param` is obtained from `request.getParameter(\"BenchmarkTest00021\")` (BenchmarkTest00021.java:44) with only a null check (line 45), then concatenated into `filter` at line 54 (`\"(&(objectclass=person))(|(uid=\" + param + \")(street={0}))\"`), and the tainted filter is passed to `ctx.search(base, filter, filters, sc)` at line 58. Gap: none.",
+            "rule_id": "java.lang.security.audit.tainted-ldapi-from-http-request.tainted-ldapi-from-http-request",
+            "line": 58,
+            "snippet": "                    ctx.search(base, filter, filters, sc);",
+            "issue": "Detected input from a HTTPServletRequest going into an LDAP query. This could lead to LDAP injection if the input is not properly sanitized, which could result in attackers modifying objects in the LDAP tree structure. Ensure data passed to an LDAP query is not controllable or properly sanitize the data."
+          }
+        ]
+      },
+      "BenchmarkTest00022": {
+        "expected": false,
+        "strict": false,
+        "lenient": false,
+        "outcome_strict": "TN",
+        "outcome_lenient": "TN",
+        "on_target": 0,
+        "off_target": 0,
+        "total": 0,
+        "dismissed": 0,
+        "inconclusive": 0,
+        "findings": []
+      },
+      "BenchmarkTest00023": {
+        "expected": true,
+        "strict": true,
+        "lenient": true,
+        "outcome_strict": "TP",
+        "outcome_lenient": "TP",
+        "on_target": 1,
+        "off_target": 0,
+        "total": 1,
+        "dismissed": 0,
+        "inconclusive": 0,
+        "findings": [
+          {
+            "cwe_raw": "CWE-330",
+            "cwes": [
+              330
+            ],
+            "severity": null,
+            "status": "valid",
+            "triaged": true,
+            "triage_reason": "Verdict: The finding is valid — the code directly instantiates the weak PRNG java.util.Random to generate a security-sensitive remember-me key. Evidence: BenchmarkTest00023.java:47 calls `new java.util.Random().nextFloat()` and line 48 derives `rememberMeKey` from that float (`Float.toString(rand).substring(2)`), which is subsequently written into the response as a remember-me value (lines 90-94), matching CWE-330 weak PRNG usage; grep confirms no SecureRandom usage in the file. Gap: none.",
+            "rule_id": "Users.trinhthilananh.Desktop.Personal.vinsoc.week2.scan_benchmarkjava.rules.benchmarkjava.benchmarkjava.weak-prng.util-random",
+            "line": 47,
+            "snippet": "        float rand = new java.util.Random().nextFloat();",
+            "issue": "java.util.Random is a weak PRNG and must not be used for security-sensitive values (CWE-330). Prefer java.security.SecureRandom."
+          }
+        ]
+      },
+      "BenchmarkTest00024": {
+        "expected": true,
+        "strict": true,
+        "lenient": true,
+        "outcome_strict": "TP",
+        "outcome_lenient": "TP",
+        "on_target": 1,
+        "off_target": 0,
+        "total": 1,
+        "dismissed": 0,
+        "inconclusive": 0,
+        "findings": [
+          {
+            "cwe_raw": "CWE-89",
+            "cwes": [
+              89
+            ],
+            "severity": null,
+            "status": "valid",
+            "triaged": true,
+            "triage_reason": "Verdict: The finding is valid — unvalidated HTTP request input is concatenated directly into a SQL string that is passed to prepareStatement and executed. Evidence: param is sourced from request.getParameter at line 44, embedded into the SQL literal at line 47 (\"PASSWORD='\" + param + \"'\"), and the resulting sql string is passed to connection.prepareStatement at line 53, then executed at line 59; only the USERNAME '?' placeholder is bound via setString(1, \"foo\") at line 58, so param itself is not parameterized and no sanitization/allowlist/escaping exists (only a null-to-empty fallback at line 45). Gap: none.",
+            "rule_id": "java.lang.security.audit.sqli.tainted-sql-from-http-request.tainted-sql-from-http-request",
+            "line": 52,
+            "snippet": "            java.sql.PreparedStatement statement =\n                    connection.prepareStatement(\n                            sql,\n                            java.sql.ResultSet.TYPE_FORWARD_ONLY,\n                            java.sql.ResultSet.CONCUR_READ_ONLY,\n                            java.sql.ResultSet.CLOSE_CURSORS_AT_COMMIT);",
+            "issue": "Detected input from a HTTPServletRequest going into a SQL sink or statement. This could lead to SQL injection if variables in the SQL statement are not properly sanitized. Use parameterized SQL queries or properly sanitize user input instead."
+          }
+        ]
+      },
+      "BenchmarkTest00025": {
+        "expected": true,
+        "strict": true,
+        "lenient": true,
+        "outcome_strict": "TP",
+        "outcome_lenient": "TP",
+        "on_target": 1,
+        "off_target": 0,
+        "total": 2,
+        "dismissed": 1,
+        "inconclusive": 0,
+        "findings": [
+          {
+            "cwe_raw": "CWE-89",
+            "cwes": [
+              89
+            ],
+            "severity": null,
+            "status": "valid",
+            "triaged": true,
+            "triage_reason": "Verdict: Valid — request-controlled param is concatenated into a SQL string and passed to a JDBC template query sink with no sanitization or parameterization. Evidence: request.getParameter at BenchmarkTest00025.java:44 feeds param; only a null check at line 45; SQL built via string concatenation at line 47; tainted sql reaches JDBCtemplate.queryForObject(sql, Long.class) at lines 51-53. Gap: none.",
+            "rule_id": "java.lang.security.audit.sqli.tainted-sql-from-http-request.tainted-sql-from-http-request",
+            "line": 51,
+            "snippet": "            Long results =\n                    org.owasp.benchmark.helpers.DatabaseHelper.JDBCtemplate.queryForObject(\n                            sql, Long.class);",
+            "issue": "Detected input from a HTTPServletRequest going into a SQL sink or statement. This could lead to SQL injection if variables in the SQL statement are not properly sanitized. Use parameterized SQL queries or properly sanitize user input instead."
+          },
+          {
+            "cwe_raw": "CWE-79",
+            "cwes": [
+              79
+            ],
+            "severity": null,
+            "status": "invalid",
+            "triaged": true,
+            "triage_reason": "Verdict: The reported response-writer call does not write user-controlled HTML content because the only dynamic value is a Long converted to string. Evidence: Line 54 writes the fixed prefix plus String.valueOf(results), where results is the Long returned by queryForObject at lines 51-53, so no attacker-controlled HTML/script can be emitted. Gap: none.",
+            "rule_id": "java.lang.security.audit.xss.no-direct-response-writer.no-direct-response-writer",
+            "line": 54,
+            "snippet": "            response.getWriter().println(\"Your results are: \" + String.valueOf(results));",
+            "issue": "Detected a request with potential user-input going into a OutputStream or Writer object. This bypasses any view or template environments, including HTML escaping, which may expose this application to cross-site scripting (XSS) vulnerabilities. Consider using a view technology such as JavaServer Faces (JSFs) which automatically escapes HTML views."
+          }
+        ]
+      },
+      "BenchmarkTest00026": {
+        "expected": true,
+        "strict": true,
+        "lenient": true,
+        "outcome_strict": "TP",
+        "outcome_lenient": "TP",
+        "on_target": 1,
+        "off_target": 0,
+        "total": 1,
+        "dismissed": 0,
+        "inconclusive": 0,
+        "findings": [
+          {
+            "cwe_raw": "CWE-89",
+            "cwes": [
+              89
+            ],
+            "severity": null,
+            "status": "valid",
+            "triaged": true,
+            "triage_reason": "Verdict: HTTP request parameter flows unsanitized via string concatenation into a Spring JDBC SQL sink, confirming SQL injection. Evidence: doPost obtains `param = request.getParameter(\"BenchmarkTest00026\")` (BenchmarkTest00026.java:44), applies only a null-to-empty check (line 45), concatenates it into `sql = \"SELECT * from USERS ... PASSWORD='\" + param + \"'\"` (line 47), and passes that string directly to `JDBCtemplate.queryForRowSet(sql)` (line 50); ESAPI encoding at lines 56-67 is HTML output encoding only and does not sanitize the query. Gap: none.",
+            "rule_id": "java.lang.security.audit.sqli.tainted-sql-from-http-request.tainted-sql-from-http-request",
+            "line": 49,
+            "snippet": "            org.springframework.jdbc.support.rowset.SqlRowSet results =\n                    org.owasp.benchmark.helpers.DatabaseHelper.JDBCtemplate.queryForRowSet(sql);",
+            "issue": "Detected input from a HTTPServletRequest going into a SQL sink or statement. This could lead to SQL injection if variables in the SQL statement are not properly sanitized. Use parameterized SQL queries or properly sanitize user input instead."
+          }
+        ]
+      },
+      "BenchmarkTest00027": {
+        "expected": true,
+        "strict": true,
+        "lenient": true,
+        "outcome_strict": "TP",
+        "outcome_lenient": "TP",
+        "on_target": 1,
+        "off_target": 0,
+        "total": 1,
+        "dismissed": 0,
+        "inconclusive": 0,
+        "findings": [
+          {
+            "cwe_raw": "CWE-89",
+            "cwes": [
+              89
+            ],
+            "severity": null,
+            "status": "valid",
+            "triaged": true,
+            "triage_reason": "Verdict: The finding is valid — request-controlled input flows unsanitized into a string-built SQL query executed by a plain Statement. Evidence: request.getParameter returns param (BenchmarkTest00027.java:44), only a null check follows (line 45), param is concatenated directly into the SQL literal (line 47), and the concatenated string is executed via statement.executeUpdate(sql) (line 52), where getSqlStatement() returns a raw java.sql.Statement (DatabaseHelper.java:119); no parameterization, escaping, or validation exists anywhere in the method. Gap: none.",
+            "rule_id": "java.lang.security.audit.sqli.tainted-sql-from-http-request.tainted-sql-from-http-request",
+            "line": 50,
+            "snippet": "            java.sql.Statement statement =\n                    org.owasp.benchmark.helpers.DatabaseHelper.getSqlStatement();\n            int count = statement.executeUpdate(sql);",
+            "issue": "Detected input from a HTTPServletRequest going into a SQL sink or statement. This could lead to SQL injection if variables in the SQL statement are not properly sanitized. Use parameterized SQL queries or properly sanitize user input instead."
+          }
+        ]
+      },
+      "BenchmarkTest00028": {
+        "expected": true,
+        "strict": true,
+        "lenient": true,
+        "outcome_strict": "TP",
+        "outcome_lenient": "TP",
+        "on_target": 2,
+        "off_target": 0,
+        "total": 2,
+        "dismissed": 0,
+        "inconclusive": 0,
+        "findings": [
+          {
+            "cwe_raw": "CWE-22",
+            "cwes": [
+              22
+            ],
+            "severity": null,
+            "status": "valid",
+            "triaged": true,
+            "triage_reason": "Verdict: The finding is valid; user-controlled `param` is concatenated into `fileName` and passed directly to `java.io.FileOutputStream` without sanitization. Evidence: `fileName = org.owasp.benchmark.helpers.Utils.TESTFILES_DIR + param;` (line 55) is followed by `fos = new java.io.FileOutputStream(fileName, false);` (line 57), with no validation, filtering, or canonicalization between them. Gap: none.",
+            "rule_id": "java.lang.security.httpservlet-path-traversal.httpservlet-path-traversal",
+            "line": 57,
+            "snippet": "            fos = new java.io.FileOutputStream(fileName, false);",
+            "issue": "Detected a potential path traversal. A malicious actor could control the location of this file, to include going backwards in the directory with '../'. To address this, ensure that user-controlled variables in file paths are sanitized. You may also consider using a utility method such as org.apache.commons.io.FilenameUtils.getName(...) to only retrieve the file name from the path."
+          },
+          {
+            "cwe_raw": "CWE-22",
+            "cwes": [
+              22
+            ],
+            "severity": null,
+            "status": "valid",
+            "triaged": true,
+            "triage_reason": "Verdict: The reported path traversal is valid — an attacker-controlled request parameter is concatenated into a file path and passed to FileOutputStream with no sanitization. Evidence: `param` is taken directly from `request.getParameterMap()` (line 48), concatenated into `fileName = Utils.TESTFILES_DIR + param` (line 55), and used to open `new java.io.FileOutputStream(fileName, false)` (line 57); the reported line 70 (`fos = null;`) is only the finally-block cleanup inside the same method, and no validation, canonicalization, or FilenameUtils-style sanitization exists anywhere in the doPost method. Gap: none.",
+            "rule_id": "java.lang.security.httpservlet-path-traversal.httpservlet-path-traversal",
+            "line": 70,
+            "snippet": "                    fos = null;",
+            "issue": "Detected a potential path traversal. A malicious actor could control the location of this file, to include going backwards in the directory with '../'. To address this, ensure that user-controlled variables in file paths are sanitized. You may also consider using a utility method such as org.apache.commons.io.FilenameUtils.getName(...) to only retrieve the file name from the path."
+          }
+        ]
+      },
+      "BenchmarkTest00029": {
+        "expected": true,
+        "strict": false,
+        "lenient": false,
+        "outcome_strict": "FN",
+        "outcome_lenient": "FN",
+        "on_target": 0,
+        "off_target": 0,
+        "total": 0,
+        "dismissed": 0,
+        "inconclusive": 0,
+        "findings": []
+      },
+      "BenchmarkTest00030": {
+        "expected": true,
+        "strict": true,
+        "lenient": true,
+        "outcome_strict": "TP",
+        "outcome_lenient": "TP",
+        "on_target": 1,
+        "off_target": 0,
+        "total": 1,
+        "dismissed": 0,
+        "inconclusive": 0,
+        "findings": [
+          {
+            "cwe_raw": "CWE-79",
+            "cwes": [
+              79
+            ],
+            "severity": null,
+            "status": "valid",
+            "triaged": true,
+            "triage_reason": "Verdict: valid — unescaped user input is written directly to the HTTP response writer. Evidence: the servlet extracts the raw request parameter into `param` (src/main/java/org/owasp/benchmark/testcode/BenchmarkTest00030.java:44-48) and writes it via `response.getWriter().printf(param, obj)` (line 53) with the response content type set to `text/html` (line 42), and there is no HTML escaping, sanitizer, validator, or allowlist applied anywhere in the method; the only protective header set, `X-XSS-Protection: 0` (line 51), actually disables the browser filter. Gap: none.",
+            "rule_id": "java.lang.security.audit.xss.no-direct-response-writer.no-direct-response-writer",
+            "line": 53,
+            "snippet": "        response.getWriter().printf(param, obj);",
+            "issue": "Detected a request with potential user-input going into a OutputStream or Writer object. This bypasses any view or template environments, including HTML escaping, which may expose this application to cross-site scripting (XSS) vulnerabilities. Consider using a view technology such as JavaServer Faces (JSFs) which automatically escapes HTML views."
+          }
+        ]
+      },
+      "BenchmarkTest00031": {
+        "expected": true,
+        "strict": true,
+        "lenient": true,
+        "outcome_strict": "TP",
+        "outcome_lenient": "TP",
+        "on_target": 1,
+        "off_target": 0,
+        "total": 2,
+        "dismissed": 1,
+        "inconclusive": 0,
+        "findings": [
+          {
+            "cwe_raw": "CWE-501",
+            "cwes": [
+              501
+            ],
+            "severity": null,
+            "status": "valid",
+            "triaged": true,
+            "triage_reason": "Verdict: User-controlled request data flows unsanitized into a session putValue call, confirming the trust-boundary finding. Evidence: request.getParameterMap() at line 44 seeds param (lines 46-48), which is passed directly to request.getSession().putValue(\"userid\", param) at line 52; the sole encodeForHTML call at line 57 sanitizes only the response output, not the session value. Gap: none.",
+            "rule_id": "java.lang.security.audit.tainted-session-from-http-request.tainted-session-from-http-request",
+            "line": 52,
+            "snippet": "        request.getSession().putValue(\"userid\", param);",
+            "issue": "Detected input from a HTTPServletRequest going into a session command, like `setAttribute`. User input into such a command could lead to an attacker inputting malicious code into your session parameters, blurring the line between what's trusted and untrusted, and therefore leading to a trust boundary violation. This could lead to programmers trusting unvalidated data. Instead, thoroughly sanitize user input before passing it into such function calls."
+          },
+          {
+            "cwe_raw": "CWE-79",
+            "cwes": [
+              79
+            ],
+            "severity": null,
+            "status": "invalid",
+            "triaged": true,
+            "triage_reason": "Verdict: Invalid because the user-controlled value is HTML-encoded before it reaches the response writer, so the direct writer use does not expose unescaped XSS. Evidence: line 57 applies org.owasp.benchmark.helpers.Utils.encodeForHTML(param) inside the string passed to println at lines 54-58. Gap: none.",
+            "rule_id": "java.lang.security.audit.xss.no-direct-response-writer.no-direct-response-writer",
+            "line": 54,
+            "snippet": "        response.getWriter()\n                .println(\n                        \"Item: 'userid' with value: '\"\n                                + org.owasp.benchmark.helpers.Utils.encodeForHTML(param)\n                                + \"' saved in session.\");",
+            "issue": "Detected a request with potential user-input going into a OutputStream or Writer object. This bypasses any view or template environments, including HTML escaping, which may expose this application to cross-site scripting (XSS) vulnerabilities. Consider using a view technology such as JavaServer Faces (JSFs) which automatically escapes HTML views."
+          }
+        ]
+      },
+      "BenchmarkTest00032": {
+        "expected": true,
+        "strict": true,
+        "lenient": true,
+        "outcome_strict": "TP",
+        "outcome_lenient": "TP",
+        "on_target": 1,
+        "off_target": 0,
+        "total": 1,
+        "dismissed": 0,
+        "inconclusive": 0,
+        "findings": [
+          {
+            "cwe_raw": "CWE-89",
+            "cwes": [
+              89
+            ],
+            "severity": null,
+            "status": "valid",
+            "triaged": true,
+            "triage_reason": "Verdict: The finding is valid; unsanitized HTTP request data flows via string concatenation into a raw SQL execution sink. Evidence: `param` originates from `request.getParameterMap()` (BenchmarkTest00032.java:44,47-48), is concatenated directly into the SQL string at line 52 without parameterization or sanitization, and the resulting string is passed to Spring JdbcTemplate's raw `execute(String)` sink at line 54, with `JDBCtemplate` confirmed as a `org.springframework.jdbc.core.JdbcTemplate` (DatabaseHelper.java:37); the ESAPI `encodeForHTML(sql)` at line 58 only HTML-encodes output for the response and does not sanitize the query. Gap: none.",
+            "rule_id": "java.lang.security.audit.sqli.tainted-sql-from-http-request.tainted-sql-from-http-request",
+            "line": 54,
+            "snippet": "            org.owasp.benchmark.helpers.DatabaseHelper.JDBCtemplate.execute(sql);",
+            "issue": "Detected input from a HTTPServletRequest going into a SQL sink or statement. This could lead to SQL injection if variables in the SQL statement are not properly sanitized. Use parameterized SQL queries or properly sanitize user input instead."
+          }
+        ]
+      },
+      "BenchmarkTest00033": {
+        "expected": true,
+        "strict": true,
+        "lenient": true,
+        "outcome_strict": "TP",
+        "outcome_lenient": "TP",
+        "on_target": 1,
+        "off_target": 0,
+        "total": 1,
+        "dismissed": 0,
+        "inconclusive": 0,
+        "findings": [
+          {
+            "cwe_raw": "CWE-89",
+            "cwes": [
+              89
+            ],
+            "severity": null,
+            "status": "valid",
+            "triaged": true,
+            "triage_reason": "Verdict: Valid SQL injection because request-derived data is concatenated into a SQL query and executed via a raw Spring JdbcTemplate sink. Evidence: Line 51 builds sql by string-concatenating param, and line 54 passes that sql to JDBCtemplate.queryForRowSet; line 47 shows param is assigned from request parameter map values. Gap: none.",
+            "rule_id": "java.lang.security.audit.sqli.tainted-sql-from-http-request.tainted-sql-from-http-request",
+            "line": 53,
+            "snippet": "            org.springframework.jdbc.support.rowset.SqlRowSet results =\n                    org.owasp.benchmark.helpers.DatabaseHelper.JDBCtemplate.queryForRowSet(sql);",
+            "issue": "Detected input from a HTTPServletRequest going into a SQL sink or statement. This could lead to SQL injection if variables in the SQL statement are not properly sanitized. Use parameterized SQL queries or properly sanitize user input instead."
+          }
+        ]
+      },
+      "BenchmarkTest00034": {
+        "expected": true,
+        "strict": true,
+        "lenient": true,
+        "outcome_strict": "TP",
+        "outcome_lenient": "TP",
+        "on_target": 1,
+        "off_target": 0,
+        "total": 1,
+        "dismissed": 0,
+        "inconclusive": 0,
+        "findings": [
+          {
+            "cwe_raw": "CWE-89",
+            "cwes": [
+              89
+            ],
+            "severity": null,
+            "status": "valid",
+            "triaged": true,
+            "triage_reason": "Verdict: The finding is valid — unvalidated HTTP request input flows by string concatenation into a raw java.sql.Statement.execute SQL sink. Evidence: param is taken directly from request.getParameterMap() without sanitization (lines 44-48), concatenated into the SQL string at line 51, and executed via statement.execute(sql, ...) at line 56 with no PreparedStatement or parameterization. Gap: none.",
+            "rule_id": "java.lang.security.audit.sqli.tainted-sql-from-http-request.tainted-sql-from-http-request",
+            "line": 56,
+            "snippet": "            statement.execute(sql, java.sql.Statement.RETURN_GENERATED_KEYS);",
+            "issue": "Detected input from a HTTPServletRequest going into a SQL sink or statement. This could lead to SQL injection if variables in the SQL statement are not properly sanitized. Use parameterized SQL queries or properly sanitize user input instead."
+          }
+        ]
+      },
+      "BenchmarkTest00035": {
+        "expected": true,
+        "strict": true,
+        "lenient": true,
+        "outcome_strict": "TP",
+        "outcome_lenient": "TP",
+        "on_target": 2,
+        "off_target": 0,
+        "total": 2,
+        "dismissed": 0,
+        "inconclusive": 0,
+        "findings": [
+          {
+            "cwe_raw": "CWE-326",
+            "cwes": [
+              326
+            ],
+            "severity": null,
+            "status": "valid",
+            "triaged": true,
+            "triage_reason": "Verdict: The finding is valid because the same crypto block uses deprecated Triple DES (DESede). Evidence: line 65 sets the cipher algorithm default to \"DESede/ECB/PKCS5Padding\" and line 66 instantiates Cipher.getInstance(algorithm), while line 69 generates a DES key feeding the same cipher; all are within the reported weak-crypto block. Gap: none.",
+            "rule_id": "java.lang.security.audit.crypto.desede-is-deprecated.desede-is-deprecated",
+            "line": 69,
+            "snippet": "            javax.crypto.SecretKey key = javax.crypto.KeyGenerator.getInstance(\"DES\").generateKey();",
+            "issue": "Triple DES (3DES or DESede) is considered deprecated. AES is the recommended cipher. Upgrade to use AES."
+          },
+          {
+            "cwe_raw": "CWE-326",
+            "cwes": [
+              326
+            ],
+            "severity": null,
+            "status": "valid",
+            "triaged": true,
+            "triage_reason": "Verdict: The code directly instantiates a DES key generator, matching the reported deprecated-algorithm finding. Evidence: Line 69 hardcodes the string \"DES\" in javax.crypto.KeyGenerator.getInstance(\"DES\").generateKey(), with the generated key then used to initialize a Cipher at line 70, and no override or algorithm guard exists in the surrounding block (lines 62-75). Gap: none.",
+            "rule_id": "java.lang.security.audit.crypto.des-is-deprecated.des-is-deprecated",
+            "line": 69,
+            "snippet": "            javax.crypto.SecretKey key = javax.crypto.KeyGenerator.getInstance(\"DES\").generateKey();",
+            "issue": "DES is considered deprecated. AES is the recommended cipher. Upgrade to use AES. See https://www.nist.gov/news-events/news/2005/06/nist-withdraws-outdated-data-encryption-standard for more information."
+          }
+        ]
+      },
+      "BenchmarkTest00036": {
+        "expected": true,
+        "strict": true,
+        "lenient": false,
+        "outcome_strict": "TP",
+        "outcome_lenient": "FN",
+        "on_target": 1,
+        "off_target": 0,
+        "total": 1,
+        "dismissed": 0,
+        "inconclusive": 1,
+        "findings": [
+          {
+            "cwe_raw": "CWE-79",
+            "cwes": [
+              79
+            ],
+            "severity": null,
+            "status": "inconclusive",
+            "triaged": true,
+            "triage_reason": "Verdict: The sink is confirmed at line 65 (response.getWriter().write(param.toCharArray(),...)), but the origin of `param` (whether it is user-controllable) is not visible in the provided file window, so the taint-source-to-sink chain cannot be fully resolved. Evidence: FILE_WINDOW lines 59-71 show only the sink and surrounding null/header logic; the source assignment of `param` lies earlier in the method/file. Gap: the definition and user-input provenance of `param` are outside the provided evidence.",
+            "rule_id": "java.lang.security.audit.xss.no-direct-response-writer.no-direct-response-writer",
+            "line": 65,
+            "snippet": "            response.getWriter().write(param.toCharArray(), 0, length);",
+            "issue": "Detected a request with potential user-input going into a OutputStream or Writer object. This bypasses any view or template environments, including HTML escaping, which may expose this application to cross-site scripting (XSS) vulnerabilities. Consider using a view technology such as JavaServer Faces (JSFs) which automatically escapes HTML views."
+          }
+        ]
+      }
+    }
+  },
+  "unmatched_findings": 0
+}

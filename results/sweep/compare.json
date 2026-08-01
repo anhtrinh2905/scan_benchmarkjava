@@ -1,7 +1,7 @@
 [
   {
     "variant": "baseline",
-    "minutes": 0.5,
+    "minutes": 0.1,
     "total_tokens": 0,
     "findings": 0,
     "triage_prec": null,
@@ -9,33 +9,7 @@
     "gt_recall": 0.0,
     "gt_tp": 0,
     "gt_fp": 0,
-    "gt_fn": 43,
-    "gt_tn": 5
-  },
-  {
-    "variant": "workers_10",
-    "minutes": 0.3,
-    "total_tokens": 0,
-    "findings": 0,
-    "triage_prec": null,
-    "gt_precision": null,
-    "gt_recall": 0.0,
-    "gt_tp": 0,
-    "gt_fp": 0,
-    "gt_fn": 43,
-    "gt_tn": 5
-  },
-  {
-    "variant": "reach_1",
-    "minutes": 0.5,
-    "total_tokens": 0,
-    "findings": 0,
-    "triage_prec": null,
-    "gt_precision": null,
-    "gt_recall": 0.0,
-    "gt_tp": 0,
-    "gt_fp": 0,
-    "gt_fn": 43,
-    "gt_tn": 5
+    "gt_fn": 8,
+    "gt_tn": 2
   }
 ]

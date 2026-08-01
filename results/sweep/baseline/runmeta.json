@@ -3,14 +3,14 @@
     "scan_model": "deepseek-v4-flash",
     "base_url": "https://opencode.ai/zen/go/v1",
     "engine_override": {},
-    "tests_digest": "37e946e565d63213"
+    "tests_digest": "9db953ca34842859"
   },
-  "wall_clock_seconds": 31.27,
+  "wall_clock_seconds": 10.53,
   "usage": {
     "input_tokens": 0,
     "output_tokens": 0,
     "total_tokens": 0,
-    "duration_seconds": 29.1
+    "duration_seconds": 8.22
   },
-  "ran_at": "2026-08-01T03:00:16.148584+00:00"
+  "ran_at": "2026-08-01T06:47:25.439717+00:00"
 }

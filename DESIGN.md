@@ -88,6 +88,30 @@ Don't sprinkle serif on body text or mono on prose.
 **Borders**: 1px `var(--border)`. No drop shadows except focus rings, active sidebar item,
 and hero-card hover lift. One purposeful elevation, never shadow noise.
 
+## Outcome-status scale (added 2026-08-01, card C-014)
+
+The benchmark's four scoring outcomes are the only semantic colour in this project. They
+are declared here, once, so no component invents its own — and they are **reinforcement
+only**: every surface that uses them MUST also print the literal `TP`/`FP`/`FN`/`TN` text,
+so the meaning survives colourblindness, a greyscale print, and a CSV export
+(WCAG `color-not-only`; ADR decision 22).
+
+| Outcome | Meaning | Background | Text | Contrast |
+|---|---|---|---|---|
+| `TP` | caught a real vulnerability | `#ECFDF5` | `#065F46` | 8.6:1 |
+| `TN` | correctly left a safe file alone | `#F0FDFA` | `#115E59` | 7.4:1 |
+| `FN` | **missed** a real vulnerability | `#FEF2F2` | `#991B1B` | 7.7:1 |
+| `FP` | false alarm on a safe file | `#FFF7ED` | `#9A3412` | 6.5:1 |
+| _(blank)_ | this run never scanned this file | none | — | — |
+
+Blank is not a fifth outcome and must never be tinted: an unscanned cell and a missed
+detection are different facts, and the surface says so in words, not only by absence.
+
+**Note on the shipped token set.** `.streamlit/config.toml` runs a slate/blue theme
+(`#F8FAFC` / `#FFFFFF` / `#1E293B` / `#E2E8F0` / primary `#2563EB`) rather than the
+Editorial Minimal tokens below. That substitution predates this card and is left standing;
+the scale above is tuned to the theme actually in use.
+
 ## Soft gradients (highlight, not decorate)
 
 Hero surfaces ONLY (hero action cards, gallery/list covers, pulse backdrop). NEVER on

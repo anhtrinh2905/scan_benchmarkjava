@@ -1,0 +1,167 @@
+{
+  "variant": "baseline",
+  "engine_override": {},
+  "wall_clock_seconds": 10.53,
+  "usage": {
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "total_tokens": 0,
+    "duration_seconds": 8.22
+  },
+  "triage_precision": null,
+  "ground_truth": {
+    "strict": {
+      "TP": 0,
+      "FP": 0,
+      "FN": 8,
+      "TN": 2,
+      "precision": null,
+      "recall": 0.0,
+      "fpr": 0.0,
+      "youden": 0.0
+    },
+    "lenient": {
+      "TP": 0,
+      "FP": 0,
+      "FN": 8,
+      "TN": 2,
+      "precision": null,
+      "recall": 0.0,
+      "fpr": 0.0,
+      "youden": 0.0
+    },
+    "per_test": {
+      "BenchmarkTest00001": {
+        "expected": true,
+        "strict": false,
+        "lenient": false,
+        "outcome_strict": "FN",
+        "outcome_lenient": "FN",
+        "on_target": 0,
+        "off_target": 0,
+        "total": 0,
+        "dismissed": 0,
+        "inconclusive": 0,
+        "findings": []
+      },
+      "BenchmarkTest00002": {
+        "expected": true,
+        "strict": false,
+        "lenient": false,
+        "outcome_strict": "FN",
+        "outcome_lenient": "FN",
+        "on_target": 0,
+        "off_target": 0,
+        "total": 0,
+        "dismissed": 0,
+        "inconclusive": 0,
+        "findings": []
+      },
+      "BenchmarkTest00003": {
+        "expected": true,
+        "strict": false,
+        "lenient": false,
+        "outcome_strict": "FN",
+        "outcome_lenient": "FN",
+        "on_target": 0,
+        "off_target": 0,
+        "total": 0,
+        "dismissed": 0,
+        "inconclusive": 0,
+        "findings": []
+      },
+      "BenchmarkTest00004": {
+        "expected": true,
+        "strict": false,
+        "lenient": false,
+        "outcome_strict": "FN",
+        "outcome_lenient": "FN",
+        "on_target": 0,
+        "off_target": 0,
+        "total": 0,
+        "dismissed": 0,
+        "inconclusive": 0,
+        "findings": []
+      },
+      "BenchmarkTest00005": {
+        "expected": true,
+        "strict": false,
+        "lenient": false,
+        "outcome_strict": "FN",
+        "outcome_lenient": "FN",
+        "on_target": 0,
+        "off_target": 0,
+        "total": 0,
+        "dismissed": 0,
+        "inconclusive": 0,
+        "findings": []
+      },
+      "BenchmarkTest00006": {
+        "expected": true,
+        "strict": false,
+        "lenient": false,
+        "outcome_strict": "FN",
+        "outcome_lenient": "FN",
+        "on_target": 0,
+        "off_target": 0,
+        "total": 0,
+        "dismissed": 0,
+        "inconclusive": 0,
+        "findings": []
+      },
+      "BenchmarkTest00007": {
+        "expected": true,
+        "strict": false,
+        "lenient": false,
+        "outcome_strict": "FN",
+        "outcome_lenient": "FN",
+        "on_target": 0,
+        "off_target": 0,
+        "total": 0,
+        "dismissed": 0,
+        "inconclusive": 0,
+        "findings": []
+      },
+      "BenchmarkTest00008": {
+        "expected": true,
+        "strict": false,
+        "lenient": false,
+        "outcome_strict": "FN",
+        "outcome_lenient": "FN",
+        "on_target": 0,
+        "off_target": 0,
+        "total": 0,
+        "dismissed": 0,
+        "inconclusive": 0,
+        "findings": []
+      },
+      "BenchmarkTest00009": {
+        "expected": false,
+        "strict": false,
+        "lenient": false,
+        "outcome_strict": "TN",
+        "outcome_lenient": "TN",
+        "on_target": 0,
+        "off_target": 0,
+        "total": 0,
+        "dismissed": 0,
+        "inconclusive": 0,
+        "findings": []
+      },
+      "BenchmarkTest00010": {
+        "expected": false,
+        "strict": false,
+        "lenient": false,
+        "outcome_strict": "TN",
+        "outcome_lenient": "TN",
+        "on_target": 0,
+        "off_target": 0,
+        "total": 0,
+        "dismissed": 0,
+        "inconclusive": 0,
+        "findings": []
+      }
+    }
+  },
+  "unmatched_findings": 0
+}
