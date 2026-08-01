@@ -58,7 +58,11 @@ DEFAULT_SAMPLE_SIZE = 100
 # Ruleset Semgrep cho arm `static`. Đổi giá trị này là chữ ký cache của arm
 # dùng Semgrep hết hạn (xem arm_signature) — không có chuyện dùng lại im lặng
 # kết quả quét bằng ruleset khác.
-SEMGREP_RULESETS: list[str] = ["p/java", "p/owasp-top-ten"]
+SEMGREP_RULESETS: list[str] = [
+    "p/java",
+    "p/owasp-top-ten",
+    str(bm.ROOT / "rules" / "benchmarkjava"),
+]
 
 # Semgrep phải tải rule từ registry qua mạng -> hỏng nhất thời là chuyện thường.
 # KHÔNG đưa hai hằng này vào arm_signature: số lần thử lại không làm đổi kết
@@ -230,6 +234,24 @@ def arm_command(spec: dict, config_path: Path, chroma_dir: Path,
     return cmd
 
 
+def assert_local_semgrep_configs() -> None:
+    """Nổ sớm nếu path ruleset local thiếu YAML (tránh Semgrep exit 0 + FN im lặng)."""
+    for ruleset in SEMGREP_RULESETS:
+        path = Path(ruleset)
+        if not path.is_absolute() and not path.exists():
+            # Registry packs (`p/java`, …) không phải path trên đĩa.
+            continue
+        if not path.is_dir():
+            if path.is_absolute() or path.exists():
+                raise bm.BenchError(
+                    f"Ruleset Semgrep local không phải thư mục: {path}")
+            continue
+        yamls = list(path.glob("*.yaml")) + list(path.glob("*.yml"))
+        if not yamls:
+            raise bm.BenchError(
+                f"Ruleset Semgrep local rỗng (không có *.yaml/*.yml): {path}")
+
+
 def semgrep_command(sarif_out: Path, test_names: list[str]) -> list[str]:
     """Lệnh Semgrep, chạy với cwd=BENCH_DIR.
 
@@ -239,6 +261,7 @@ def semgrep_command(sarif_out: Path, test_names: list[str]) -> list[str]:
     dùng ở các arm khác — nhờ vậy extract_findings_by_test() tách được theo
     tên test y hệt nhau cho mọi arm.
     """
+    assert_local_semgrep_configs()
     cmd = ["semgrep", "scan", "--sarif", "--output", str(sarif_out),
            "--metrics=off", "--quiet", "--no-git-ignore", "--disable-version-check"]
     for ruleset in SEMGREP_RULESETS:

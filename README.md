@@ -106,3 +106,16 @@ Kết quả: `results/ablation/<arm>/` + `results/ablation/compare.{md,csv,json}
 - Lần chạy sau với cùng tham số sẽ dùng **cache** (`[cache]`) — thêm `--force` để chạy lại.
 - `--rescore` chỉ đọc SARIF đã có, không gọi Metis/Semgrep.
 - Báo cáo phân tích kết quả: xem `2026-07-29_TrinhThiLanAnh_Week1.md`.
+
+## Giao diện Streamlit (đang xây dựng)
+
+Dự án giờ có `pyproject.toml`/`uv.lock` ở gốc (dependency đầu tiên: `streamlit`) — 3 script
+CLI ở trên vẫn chạy y nguyên qua `uv run --script`, không phụ thuộc vào file này.
+
+```bash
+uv sync
+uv run streamlit run app.py   # mở http://localhost:8501
+```
+
+Hiện tại mới có trang khung (scaffold) — chọn scan/variant/sample, chạy nền, và xem kết
+quả ngay trên UI sẽ lần lượt lên ở các card tiếp theo.

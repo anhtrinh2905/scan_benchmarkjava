@@ -1,0 +1,11 @@
+rules:
+  - id: benchmarkjava.insecure-cookie.set-secure-false
+    languages: [java]
+    message: >-
+      Cookie.setSecure(false) disables the Secure flag, allowing the cookie to be
+      sent over cleartext HTTP (CWE-614). Call setSecure(true) for sensitive cookies.
+    severity: WARNING
+    metadata:
+      tags:
+        - "CWE-614: Sensitive Cookie in HTTPS Session Without 'Secure' Attribute"
+    pattern: $C.setSecure(false)

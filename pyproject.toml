@@ -1,0 +1,12 @@
+[project]
+name = "scan-benchmarkjava"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "requests>=2.34.2",
+    "scikit-learn>=1.9.0",
+    "streamlit>=1.60.0",
+]
+
+[[tool.uv.index]]
+url = "https://gitlab.gitguardian.ovh/api/v4/projects/435/packages/pypi/simple"

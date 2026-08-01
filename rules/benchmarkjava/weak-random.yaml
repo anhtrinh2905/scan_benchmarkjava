@@ -1,0 +1,26 @@
+rules:
+  - id: benchmarkjava.weak-prng.util-random
+    languages: [java]
+    message: >-
+      java.util.Random is a weak PRNG and must not be used for security-sensitive
+      values (CWE-330). Prefer java.security.SecureRandom.
+    severity: WARNING
+    metadata:
+      tags:
+        - "CWE-330: Use of Insufficiently Random Values"
+    pattern-either:
+      - pattern: new java.util.Random(...)
+      - pattern: new Random(...)
+
+  - id: benchmarkjava.weak-prng.math-random
+    languages: [java]
+    message: >-
+      Math.random() is a weak PRNG and must not be used for security-sensitive
+      values (CWE-330). Prefer java.security.SecureRandom.
+    severity: WARNING
+    metadata:
+      tags:
+        - "CWE-330: Use of Insufficiently Random Values"
+    pattern-either:
+      - pattern: java.lang.Math.random(...)
+      - pattern: Math.random(...)
