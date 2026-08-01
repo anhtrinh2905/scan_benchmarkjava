@@ -1,15 +1,15 @@
 [
   {
-    "variant": "baseline",
-    "minutes": 0.1,
-    "total_tokens": 0,
-    "findings": 0,
-    "triage_prec": null,
-    "gt_precision": null,
-    "gt_recall": 0.0,
-    "gt_tp": 0,
-    "gt_fp": 0,
-    "gt_fn": 8,
-    "gt_tn": 2
+    "variant": "workers_10",
+    "minutes": 20.9,
+    "total_tokens": 3810741,
+    "findings": 118,
+    "triage_prec": 0.9915254237288136,
+    "gt_precision": 0.9142857142857143,
+    "gt_recall": 0.8533333333333334,
+    "gt_tp": 64,
+    "gt_fp": 6,
+    "gt_fn": 11,
+    "gt_tn": 19
   }
 ]

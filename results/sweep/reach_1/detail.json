@@ -3,61 +3,95 @@
   "engine_override": {
     "reachability_max_paths_per_sink": 1
   },
-  "wall_clock_seconds": 31.91,
+  "wall_clock_seconds": 229.44,
   "usage": {
-    "input_tokens": 0,
-    "output_tokens": 0,
-    "total_tokens": 0,
-    "duration_seconds": 30.3
+    "input_tokens": 313267,
+    "output_tokens": 48501,
+    "total_tokens": 361768,
+    "duration_seconds": 227.22
   },
-  "triage_precision": null,
+  "triage_precision": {
+    "with_status": 12,
+    "tp_like": 11,
+    "fp_like": 1,
+    "inconclusive": 0,
+    "precision": 0.9166666666666666
+  },
   "ground_truth": {
     "strict": {
-      "TP": 0,
+      "TP": 6,
       "FP": 0,
-      "FN": 43,
-      "TN": 5,
-      "precision": null,
-      "recall": 0.0,
+      "FN": 2,
+      "TN": 2,
+      "precision": 1.0,
+      "recall": 0.75,
       "fpr": 0.0,
-      "youden": 0.0
+      "youden": 0.75
     },
     "lenient": {
-      "TP": 0,
+      "TP": 6,
       "FP": 0,
-      "FN": 43,
-      "TN": 5,
-      "precision": null,
-      "recall": 0.0,
+      "FN": 2,
+      "TN": 2,
+      "precision": 1.0,
+      "recall": 0.75,
       "fpr": 0.0,
-      "youden": 0.0
+      "youden": 0.75
     },
     "per_test": {
       "BenchmarkTest00001": {
         "expected": true,
-        "strict": false,
-        "lenient": false,
-        "outcome_strict": "FN",
-        "outcome_lenient": "FN",
-        "on_target": 0,
+        "strict": true,
+        "lenient": true,
+        "outcome_strict": "TP",
+        "outcome_lenient": "TP",
+        "on_target": 1,
         "off_target": 0,
-        "total": 0,
+        "total": 1,
         "dismissed": 0,
         "inconclusive": 0,
-        "findings": []
+        "findings": [
+          {
+            "cwe_raw": "CWE-22",
+            "cwes": [
+              22
+            ],
+            "severity": "High",
+            "status": "valid",
+            "triaged": true,
+            "triage_reason": "The cookie value (attacker-controlled) is read, URL-decoded, and concatenated directly onto a base directory path without any sanitization, canonicalization, or path validation, then passed to FileInputStream, enabling path traversal.",
+            "line": 61,
+            "snippet": "param = java.net.URLDecoder.decode(theCookie.getValue(), \"UTF-8\");\n                    break;\n                }\n            }\n        }\n\n        String fileName = null;\n        java.io.FileInputStream fis = null;\n\n        try {\n            fileName = org.owasp.benchmark.helpers.Utils.TESTFILES_DIR + param;\n            fis = new java.io.FileInputStream(new java.io.File(fileName));",
+            "issue": "Path Traversal via cookie-controlled file path"
+          }
+        ]
       },
       "BenchmarkTest00002": {
         "expected": true,
-        "strict": false,
-        "lenient": false,
-        "outcome_strict": "FN",
-        "outcome_lenient": "FN",
-        "on_target": 0,
+        "strict": true,
+        "lenient": true,
+        "outcome_strict": "TP",
+        "outcome_lenient": "TP",
+        "on_target": 1,
         "off_target": 0,
-        "total": 0,
+        "total": 1,
         "dismissed": 0,
         "inconclusive": 0,
-        "findings": []
+        "findings": [
+          {
+            "cwe_raw": "CWE-22",
+            "cwes": [
+              22
+            ],
+            "severity": "High",
+            "status": "valid",
+            "triaged": true,
+            "triage_reason": "Cookie value flows from request (line 55), through URL-decoding (line 61), into direct concatenation with Utils.TESTFILES_DIR (line 71), and into FileOutputStream (line 73) without any path validation, canonicalization, or allowlist check. The ESAPI HTML encoding at line 77 only sanitizes response output and does not protect the file path.",
+            "line": 57,
+            "snippet": "String param = \"noCookieValueSupplied\";\n        if (theCookies != null) {\n            for (javax.servlet.http.Cookie theCookie : theCookies) {\n                if (theCookie.getName().equals(\"BenchmarkTest00002\")) {\n                    param = java.net.URLDecoder.decode(theCookie.getValue(), \"UTF-8\");\n                    break;\n                }\n            }\n        }\n\n        String fileName = null;\n        java.io.FileOutputStream fos = null;\n\n        try {\n            fileName = org.owasp.benchmark.helpers.Utils.TESTFILES_DIR + param;\n\n            fos = new java.io.FileOutputStream(fileName, false);",
+            "issue": "Path Traversal: Attacker-controlled cookie value is used directly in file path construction, allowing arbitrary file write outside the intended directory."
+          }
+        ]
       },
       "BenchmarkTest00003": {
         "expected": true,
@@ -66,11 +100,25 @@
         "outcome_strict": "FN",
         "outcome_lenient": "FN",
         "on_target": 0,
-        "off_target": 0,
-        "total": 0,
+        "off_target": 1,
+        "total": 1,
         "dismissed": 0,
         "inconclusive": 0,
-        "findings": []
+        "findings": [
+          {
+            "cwe_raw": "CWE-807",
+            "cwes": [
+              807
+            ],
+            "severity": "Medium",
+            "status": "valid",
+            "triaged": true,
+            "triage_reason": "The cookie domain on line 42 is derived directly from `request.getRequestURL().getHost()` without any validation, allowlist, or guard. The `HttpServletRequest.getRequestURL()` reconstructs the URL using the Host header, making the domain attacker-controllable and enabling cookie poisoning.",
+            "line": 41,
+            "snippet": "userCookie.setPath(request.getRequestURI());\n        userCookie.setDomain(new java.net.URL(request.getRequestURL().toString()).getHost());",
+            "issue": "Insecure cookie domain set from client-controlled Host header, allowing cookie poisoning."
+          }
+        ]
       },
       "BenchmarkTest00004": {
         "expected": true,
@@ -79,63 +127,159 @@
         "outcome_strict": "FN",
         "outcome_lenient": "FN",
         "on_target": 0,
-        "off_target": 0,
-        "total": 0,
+        "off_target": 2,
+        "total": 2,
         "dismissed": 0,
         "inconclusive": 0,
-        "findings": []
+        "findings": [
+          {
+            "cwe_raw": "CWE-15",
+            "cwes": [
+              15
+            ],
+            "severity": "Medium",
+            "status": "valid",
+            "triaged": true,
+            "triage_reason": "Client-controlled cookie value is used directly as session attribute name without validation, enabling attacker to overwrite arbitrary session attributes.",
+            "line": 57,
+            "snippet": "String param = \"noCookieValueSupplied\";\n        if (theCookies != null) {\n            for (javax.servlet.http.Cookie theCookie : theCookies) {\n                if (theCookie.getName().equals(\"BenchmarkTest00004\")) {\n                    param = java.net.URLDecoder.decode(theCookie.getValue(), \"UTF-8\");\n                    break;\n                }\n            }\n        }\n\n        // javax.servlet.http.HttpSession.setAttribute(java.lang.String^,java.lang.Object)\n        request.getSession().setAttribute(param, \"10340\");",
+            "issue": "Client-controlled cookie value used as HTTP session attribute name without validation"
+          },
+          {
+            "cwe_raw": "CWE-807",
+            "cwes": [
+              807
+            ],
+            "severity": "Medium",
+            "status": "valid",
+            "triaged": true,
+            "triage_reason": "The cookie domain is derived directly from the client-supplied Host header via request.getRequestURL() without any allow-list validation, enabling Host header injection to set an attacker-controlled domain.",
+            "line": 42,
+            "snippet": "userCookie.setDomain(new java.net.URL(request.getRequestURL().toString()).getHost());",
+            "issue": "Cookie domain derived from request URL may be influenced by Host header injection"
+          }
+        ]
       },
       "BenchmarkTest00005": {
         "expected": true,
-        "strict": false,
-        "lenient": false,
-        "outcome_strict": "FN",
-        "outcome_lenient": "FN",
-        "on_target": 0,
-        "off_target": 0,
-        "total": 0,
+        "strict": true,
+        "lenient": true,
+        "outcome_strict": "TP",
+        "outcome_lenient": "TP",
+        "on_target": 1,
+        "off_target": 1,
+        "total": 2,
         "dismissed": 0,
         "inconclusive": 0,
-        "findings": []
+        "findings": [
+          {
+            "cwe_raw": "CWE-327",
+            "cwes": [
+              327
+            ],
+            "severity": "High",
+            "status": "valid",
+            "triaged": true,
+            "triage_reason": "The code directly instantiates a Cipher with \"DES/CBC/PKCS5Padding\" (line 63) and generates a DES key via KeyGenerator.getInstance(\"DES\") (line 66). DES is a 56-bit symmetric cipher that is cryptographically broken and vulnerable to brute-force attacks, making this a confirmed use of a weak algorithm.",
+            "line": 63,
+            "snippet": "javax.crypto.Cipher c = javax.crypto.Cipher.getInstance(\"DES/CBC/PKCS5Padding\");\n\n// Prepare the cipher to encrypt\njavax.crypto.SecretKey key = javax.crypto.KeyGenerator.getInstance(\"DES\").generateKey();",
+            "issue": "Use of weak cryptographic algorithm DES"
+          },
+          {
+            "cwe_raw": "CWE-209",
+            "cwes": [
+              209
+            ],
+            "severity": "Medium",
+            "status": "valid",
+            "triaged": true,
+            "triage_reason": "The catch block at line 118 directly writes the full exception stack trace to the HTTP response via e.printStackTrace(response.getWriter()), exposing internal class names, method names, and line numbers to the client with no sanitization, filtering, or interception.",
+            "line": 118,
+            "snippet": "e.printStackTrace(response.getWriter());",
+            "issue": "Stack trace printed to HTTP response may leak sensitive information"
+          }
+        ]
       },
       "BenchmarkTest00006": {
         "expected": true,
-        "strict": false,
-        "lenient": false,
-        "outcome_strict": "FN",
-        "outcome_lenient": "FN",
-        "on_target": 0,
+        "strict": true,
+        "lenient": true,
+        "outcome_strict": "TP",
+        "outcome_lenient": "TP",
+        "on_target": 1,
         "off_target": 0,
-        "total": 0,
+        "total": 1,
         "dismissed": 0,
         "inconclusive": 0,
-        "findings": []
+        "findings": [
+          {
+            "cwe_raw": "CWE-78",
+            "cwes": [
+              78
+            ],
+            "severity": "Critical",
+            "status": "valid",
+            "triaged": true,
+            "triage_reason": "Verdict: The finding is valid; the code reads an unsanitized HTTP header value, URL-decodes it, and concatenates it directly into a shell command executed via ProcessBuilder with a shell interpreter. Evidence: The doPost method reads the 'BenchmarkTest00006' header at lines 45-46, decodes it at line 50, then adds it to a shell command string at line 62 (`\"echo \" + param`) and executes via shell (`cmd.exe /c` or `sh -c`) at lines 55-60 and 64-71. Gap: none.",
+            "line": 44,
+            "snippet": "String param = \"\";\n        if (request.getHeader(\"BenchmarkTest00006\") != null) {\n            param = request.getHeader(\"BenchmarkTest00006\");\n        }\n\n        // URL Decode the header value since req.getHeader() doesn't. Unlike req.getParameter().\n        param = java.net.URLDecoder.decode(param, \"UTF-8\");\n\n        java.util.List<String> argList = new java.util.ArrayList<String>();\n\n        String osName = System.getProperty(\"os.name\");\n        if (osName.indexOf(\"Windows\") != -1) {\n            argList.add(\"cmd.exe\");\n            argList.add(\"/c\");\n        } else {\n            argList.add(\"sh\");\n            argList.add(\"-c\");\n        }\n        argList.add(\"echo \" + param);\n\n        ProcessBuilder pb = new ProcessBuilder();\n\n        pb.command(argList);\n\n        try {\n            Process p = pb.start();",
+            "issue": "Command Injection via HTTP header"
+          }
+        ]
       },
       "BenchmarkTest00007": {
         "expected": true,
-        "strict": false,
-        "lenient": false,
-        "outcome_strict": "FN",
-        "outcome_lenient": "FN",
-        "on_target": 0,
+        "strict": true,
+        "lenient": true,
+        "outcome_strict": "TP",
+        "outcome_lenient": "TP",
+        "on_target": 1,
         "off_target": 0,
-        "total": 0,
+        "total": 1,
         "dismissed": 0,
         "inconclusive": 0,
-        "findings": []
+        "findings": [
+          {
+            "cwe_raw": "CWE-78",
+            "cwes": [
+              78
+            ],
+            "severity": "Critical",
+            "status": "valid",
+            "triaged": true,
+            "triage_reason": "The servlet reads a user-controlled HTTP header (source: line 46), URL-decodes it (line 50), and passes it unsanitized as an environment variable to Runtime.exec() (sink: lines 56, 61). No validation, sanitization, or allowlisting exists between source and sink.",
+            "line": 44,
+            "snippet": "String param = \"\";\n        if (request.getHeader(\"BenchmarkTest00007\") != null) {\n            param = request.getHeader(\"BenchmarkTest00007\");\n        }\n\n        // URL Decode the header value since req.getHeader() doesn't. Unlike req.getParameter().\n        param = java.net.URLDecoder.decode(param, \"UTF-8\");\n\n        String cmd =\n                org.owasp.benchmark.helpers.Utils.getInsecureOSCommandString(\n                        this.getClass().getClassLoader());\n        String[] args = {cmd};\n        String[] argsEnv = {param};\n\n        Runtime r = Runtime.getRuntime();\n\n        try {\n            Process p = r.exec(args, argsEnv);",
+            "issue": "OS Command Injection via environment variable with user-controlled HTTP header"
+          }
+        ]
       },
       "BenchmarkTest00008": {
         "expected": true,
-        "strict": false,
-        "lenient": false,
-        "outcome_strict": "FN",
-        "outcome_lenient": "FN",
-        "on_target": 0,
+        "strict": true,
+        "lenient": true,
+        "outcome_strict": "TP",
+        "outcome_lenient": "TP",
+        "on_target": 1,
         "off_target": 0,
-        "total": 0,
+        "total": 1,
         "dismissed": 0,
         "inconclusive": 0,
-        "findings": []
+        "findings": [
+          {
+            "cwe_raw": "CWE-89",
+            "cwes": [
+              89
+            ],
+            "severity": "Critical",
+            "status": "valid",
+            "triaged": true,
+            "triage_reason": "The HTTP header 'BenchmarkTest00008' is read, URL-decoded, and concatenated directly into a JDBC CallableStatement SQL string with no sanitization, validation, or parameterization before execution, constituting a textbook SQL injection vulnerability (CWE-89).",
+            "line": 44,
+            "snippet": "String param = \"\";\nif (request.getHeader(\"BenchmarkTest00008\") != null) {\n    param = request.getHeader(\"BenchmarkTest00008\");\n}\n\n// URL Decode the header value since req.getHeader() doesn't. Unlike req.getParameter().\nparam = java.net.URLDecoder.decode(param, \"UTF-8\");\n\nString sql = \"{call \" + param + \"}\";\n\ntry {\n    java.sql.Connection connection =\n            org.owasp.benchmark.helpers.DatabaseHelper.getSqlConnection();\n    java.sql.CallableStatement statement = connection.prepareCall(sql);\n    java.sql.ResultSet rs = statement.executeQuery();",
+            "issue": "SQL Injection via HTTP header in JDBC CallableStatement"
+          }
+        ]
       },
       "BenchmarkTest00009": {
         "expected": false,
@@ -156,506 +300,39 @@
         "lenient": false,
         "outcome_strict": "TN",
         "outcome_lenient": "TN",
-        "on_target": 0,
-        "off_target": 0,
-        "total": 0,
-        "dismissed": 0,
+        "on_target": 1,
+        "off_target": 1,
+        "total": 2,
+        "dismissed": 1,
         "inconclusive": 0,
-        "findings": []
-      },
-      "BenchmarkTest00011": {
-        "expected": true,
-        "strict": false,
-        "lenient": false,
-        "outcome_strict": "FN",
-        "outcome_lenient": "FN",
-        "on_target": 0,
-        "off_target": 0,
-        "total": 0,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": []
-      },
-      "BenchmarkTest00012": {
-        "expected": true,
-        "strict": false,
-        "lenient": false,
-        "outcome_strict": "FN",
-        "outcome_lenient": "FN",
-        "on_target": 0,
-        "off_target": 0,
-        "total": 0,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": []
-      },
-      "BenchmarkTest00013": {
-        "expected": true,
-        "strict": false,
-        "lenient": false,
-        "outcome_strict": "FN",
-        "outcome_lenient": "FN",
-        "on_target": 0,
-        "off_target": 0,
-        "total": 0,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": []
-      },
-      "BenchmarkTest00014": {
-        "expected": true,
-        "strict": false,
-        "lenient": false,
-        "outcome_strict": "FN",
-        "outcome_lenient": "FN",
-        "on_target": 0,
-        "off_target": 0,
-        "total": 0,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": []
-      },
-      "BenchmarkTest00015": {
-        "expected": true,
-        "strict": false,
-        "lenient": false,
-        "outcome_strict": "FN",
-        "outcome_lenient": "FN",
-        "on_target": 0,
-        "off_target": 0,
-        "total": 0,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": []
-      },
-      "BenchmarkTest00016": {
-        "expected": false,
-        "strict": false,
-        "lenient": false,
-        "outcome_strict": "TN",
-        "outcome_lenient": "TN",
-        "on_target": 0,
-        "off_target": 0,
-        "total": 0,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": []
-      },
-      "BenchmarkTest00017": {
-        "expected": true,
-        "strict": false,
-        "lenient": false,
-        "outcome_strict": "FN",
-        "outcome_lenient": "FN",
-        "on_target": 0,
-        "off_target": 0,
-        "total": 0,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": []
-      },
-      "BenchmarkTest00018": {
-        "expected": true,
-        "strict": false,
-        "lenient": false,
-        "outcome_strict": "FN",
-        "outcome_lenient": "FN",
-        "on_target": 0,
-        "off_target": 0,
-        "total": 0,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": []
-      },
-      "BenchmarkTest00019": {
-        "expected": true,
-        "strict": false,
-        "lenient": false,
-        "outcome_strict": "FN",
-        "outcome_lenient": "FN",
-        "on_target": 0,
-        "off_target": 0,
-        "total": 0,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": []
-      },
-      "BenchmarkTest00020": {
-        "expected": true,
-        "strict": false,
-        "lenient": false,
-        "outcome_strict": "FN",
-        "outcome_lenient": "FN",
-        "on_target": 0,
-        "off_target": 0,
-        "total": 0,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": []
-      },
-      "BenchmarkTest00021": {
-        "expected": true,
-        "strict": false,
-        "lenient": false,
-        "outcome_strict": "FN",
-        "outcome_lenient": "FN",
-        "on_target": 0,
-        "off_target": 0,
-        "total": 0,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": []
-      },
-      "BenchmarkTest00022": {
-        "expected": false,
-        "strict": false,
-        "lenient": false,
-        "outcome_strict": "TN",
-        "outcome_lenient": "TN",
-        "on_target": 0,
-        "off_target": 0,
-        "total": 0,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": []
-      },
-      "BenchmarkTest00023": {
-        "expected": true,
-        "strict": false,
-        "lenient": false,
-        "outcome_strict": "FN",
-        "outcome_lenient": "FN",
-        "on_target": 0,
-        "off_target": 0,
-        "total": 0,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": []
-      },
-      "BenchmarkTest00024": {
-        "expected": true,
-        "strict": false,
-        "lenient": false,
-        "outcome_strict": "FN",
-        "outcome_lenient": "FN",
-        "on_target": 0,
-        "off_target": 0,
-        "total": 0,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": []
-      },
-      "BenchmarkTest00025": {
-        "expected": true,
-        "strict": false,
-        "lenient": false,
-        "outcome_strict": "FN",
-        "outcome_lenient": "FN",
-        "on_target": 0,
-        "off_target": 0,
-        "total": 0,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": []
-      },
-      "BenchmarkTest00026": {
-        "expected": true,
-        "strict": false,
-        "lenient": false,
-        "outcome_strict": "FN",
-        "outcome_lenient": "FN",
-        "on_target": 0,
-        "off_target": 0,
-        "total": 0,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": []
-      },
-      "BenchmarkTest00027": {
-        "expected": true,
-        "strict": false,
-        "lenient": false,
-        "outcome_strict": "FN",
-        "outcome_lenient": "FN",
-        "on_target": 0,
-        "off_target": 0,
-        "total": 0,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": []
-      },
-      "BenchmarkTest00028": {
-        "expected": true,
-        "strict": false,
-        "lenient": false,
-        "outcome_strict": "FN",
-        "outcome_lenient": "FN",
-        "on_target": 0,
-        "off_target": 0,
-        "total": 0,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": []
-      },
-      "BenchmarkTest00029": {
-        "expected": true,
-        "strict": false,
-        "lenient": false,
-        "outcome_strict": "FN",
-        "outcome_lenient": "FN",
-        "on_target": 0,
-        "off_target": 0,
-        "total": 0,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": []
-      },
-      "BenchmarkTest00030": {
-        "expected": true,
-        "strict": false,
-        "lenient": false,
-        "outcome_strict": "FN",
-        "outcome_lenient": "FN",
-        "on_target": 0,
-        "off_target": 0,
-        "total": 0,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": []
-      },
-      "BenchmarkTest00031": {
-        "expected": true,
-        "strict": false,
-        "lenient": false,
-        "outcome_strict": "FN",
-        "outcome_lenient": "FN",
-        "on_target": 0,
-        "off_target": 0,
-        "total": 0,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": []
-      },
-      "BenchmarkTest00032": {
-        "expected": true,
-        "strict": false,
-        "lenient": false,
-        "outcome_strict": "FN",
-        "outcome_lenient": "FN",
-        "on_target": 0,
-        "off_target": 0,
-        "total": 0,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": []
-      },
-      "BenchmarkTest00033": {
-        "expected": true,
-        "strict": false,
-        "lenient": false,
-        "outcome_strict": "FN",
-        "outcome_lenient": "FN",
-        "on_target": 0,
-        "off_target": 0,
-        "total": 0,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": []
-      },
-      "BenchmarkTest00034": {
-        "expected": true,
-        "strict": false,
-        "lenient": false,
-        "outcome_strict": "FN",
-        "outcome_lenient": "FN",
-        "on_target": 0,
-        "off_target": 0,
-        "total": 0,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": []
-      },
-      "BenchmarkTest00035": {
-        "expected": true,
-        "strict": false,
-        "lenient": false,
-        "outcome_strict": "FN",
-        "outcome_lenient": "FN",
-        "on_target": 0,
-        "off_target": 0,
-        "total": 0,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": []
-      },
-      "BenchmarkTest00036": {
-        "expected": true,
-        "strict": false,
-        "lenient": false,
-        "outcome_strict": "FN",
-        "outcome_lenient": "FN",
-        "on_target": 0,
-        "off_target": 0,
-        "total": 0,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": []
-      },
-      "BenchmarkTest00037": {
-        "expected": true,
-        "strict": false,
-        "lenient": false,
-        "outcome_strict": "FN",
-        "outcome_lenient": "FN",
-        "on_target": 0,
-        "off_target": 0,
-        "total": 0,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": []
-      },
-      "BenchmarkTest00038": {
-        "expected": true,
-        "strict": false,
-        "lenient": false,
-        "outcome_strict": "FN",
-        "outcome_lenient": "FN",
-        "on_target": 0,
-        "off_target": 0,
-        "total": 0,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": []
-      },
-      "BenchmarkTest00039": {
-        "expected": true,
-        "strict": false,
-        "lenient": false,
-        "outcome_strict": "FN",
-        "outcome_lenient": "FN",
-        "on_target": 0,
-        "off_target": 0,
-        "total": 0,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": []
-      },
-      "BenchmarkTest00040": {
-        "expected": true,
-        "strict": false,
-        "lenient": false,
-        "outcome_strict": "FN",
-        "outcome_lenient": "FN",
-        "on_target": 0,
-        "off_target": 0,
-        "total": 0,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": []
-      },
-      "BenchmarkTest00041": {
-        "expected": true,
-        "strict": false,
-        "lenient": false,
-        "outcome_strict": "FN",
-        "outcome_lenient": "FN",
-        "on_target": 0,
-        "off_target": 0,
-        "total": 0,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": []
-      },
-      "BenchmarkTest00042": {
-        "expected": false,
-        "strict": false,
-        "lenient": false,
-        "outcome_strict": "TN",
-        "outcome_lenient": "TN",
-        "on_target": 0,
-        "off_target": 0,
-        "total": 0,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": []
-      },
-      "BenchmarkTest00043": {
-        "expected": true,
-        "strict": false,
-        "lenient": false,
-        "outcome_strict": "FN",
-        "outcome_lenient": "FN",
-        "on_target": 0,
-        "off_target": 0,
-        "total": 0,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": []
-      },
-      "BenchmarkTest00044": {
-        "expected": true,
-        "strict": false,
-        "lenient": false,
-        "outcome_strict": "FN",
-        "outcome_lenient": "FN",
-        "on_target": 0,
-        "off_target": 0,
-        "total": 0,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": []
-      },
-      "BenchmarkTest00045": {
-        "expected": true,
-        "strict": false,
-        "lenient": false,
-        "outcome_strict": "FN",
-        "outcome_lenient": "FN",
-        "on_target": 0,
-        "off_target": 0,
-        "total": 0,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": []
-      },
-      "BenchmarkTest00046": {
-        "expected": true,
-        "strict": false,
-        "lenient": false,
-        "outcome_strict": "FN",
-        "outcome_lenient": "FN",
-        "on_target": 0,
-        "off_target": 0,
-        "total": 0,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": []
-      },
-      "BenchmarkTest00047": {
-        "expected": true,
-        "strict": false,
-        "lenient": false,
-        "outcome_strict": "FN",
-        "outcome_lenient": "FN",
-        "on_target": 0,
-        "off_target": 0,
-        "total": 0,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": []
-      },
-      "BenchmarkTest00048": {
-        "expected": true,
-        "strict": false,
-        "lenient": false,
-        "outcome_strict": "FN",
-        "outcome_lenient": "FN",
-        "on_target": 0,
-        "off_target": 0,
-        "total": 0,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": []
+        "findings": [
+          {
+            "cwe_raw": "CWE-338",
+            "cwes": [
+              338
+            ],
+            "severity": "Critical",
+            "status": "invalid",
+            "triaged": true,
+            "triage_reason": "The remember-me token is derived from `SecureRandom.nextInt(99)`, which produces only 99 possible values (0–98, ~6.6 bits of entropy), making it trivially brute-forceable for session hijacking. This directly contradicts the security expectation of a cryptographically strong, high-entropy authentication token.\nDeterministic adjudication adjusted status to 'invalid' (model suggested 'valid').\nAdjudication reason codes: OVERRIDE_CONTRADICTION_SIGNAL.",
+            "line": 63,
+            "snippet": "int randNumber = java.security.SecureRandom.getInstance(\"SHA1PRNG\").nextInt(99);\n            String rememberMeKey = Integer.toString(randNumber);",
+            "issue": "Weak randomness used for authentication 'remember me' token"
+          },
+          {
+            "cwe_raw": "CWE-200",
+            "cwes": [
+              200
+            ],
+            "severity": "Medium",
+            "status": "valid",
+            "triaged": true,
+            "triage_reason": "The rememberMeKey authentication token (line 64) is written directly to the HTTP response body via response.getWriter().println() at lines 100-107, where rememberMe.getValue() returns the raw token. No sanitization, masking, or conditional guard prevents this exposure.",
+            "line": 100,
+            "snippet": "response.getWriter()\n                        .println(\n                                user\n                                        + \" has been remembered with cookie: \"\n                                        + rememberMe.getName()\n                                        + \" whose value is: \"\n                                        + rememberMe.getValue()\n                                        + \"<br/>\");",
+            "issue": "Authentication token exposed in HTTP response body"
+          }
+        ]
       }
     }
   },

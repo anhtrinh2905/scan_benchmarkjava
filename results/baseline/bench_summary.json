@@ -1,16 +1,16 @@
 {
-  "generated_at": "2026-08-01T04:04:43.981390+00:00",
+  "generated_at": "2026-08-01T14:47:05.313053+00:00",
   "tag": "baseline",
-  "scan_model": "deepseek-v4-flash",
+  "scan_model": "deepseek-v4-pro",
   "base_url": "https://opencode.ai/zen/go/v1",
   "metis_version": "1.5.0",
-  "metis_git": "14cce32",
+  "metis_git": "0d6673a",
   "triage": true,
   "max_rounds": 6,
   "max_workers": 2,
   "parallel": 4,
   "repeat": 1,
-  "sample_size": 6,
+  "sample_size": 100,
   "selection": "first-N-by-name",
   "tests": [
     "BenchmarkTest00001",
@@ -18,39 +18,133 @@
     "BenchmarkTest00003",
     "BenchmarkTest00004",
     "BenchmarkTest00005",
-    "BenchmarkTest00006"
+    "BenchmarkTest00006",
+    "BenchmarkTest00007",
+    "BenchmarkTest00008",
+    "BenchmarkTest00009",
+    "BenchmarkTest00010",
+    "BenchmarkTest00011",
+    "BenchmarkTest00012",
+    "BenchmarkTest00013",
+    "BenchmarkTest00014",
+    "BenchmarkTest00015",
+    "BenchmarkTest00016",
+    "BenchmarkTest00017",
+    "BenchmarkTest00018",
+    "BenchmarkTest00019",
+    "BenchmarkTest00020",
+    "BenchmarkTest00021",
+    "BenchmarkTest00022",
+    "BenchmarkTest00023",
+    "BenchmarkTest00024",
+    "BenchmarkTest00025",
+    "BenchmarkTest00026",
+    "BenchmarkTest00027",
+    "BenchmarkTest00028",
+    "BenchmarkTest00029",
+    "BenchmarkTest00030",
+    "BenchmarkTest00031",
+    "BenchmarkTest00032",
+    "BenchmarkTest00033",
+    "BenchmarkTest00034",
+    "BenchmarkTest00035",
+    "BenchmarkTest00036",
+    "BenchmarkTest00037",
+    "BenchmarkTest00038",
+    "BenchmarkTest00039",
+    "BenchmarkTest00040",
+    "BenchmarkTest00041",
+    "BenchmarkTest00042",
+    "BenchmarkTest00043",
+    "BenchmarkTest00044",
+    "BenchmarkTest00045",
+    "BenchmarkTest00046",
+    "BenchmarkTest00047",
+    "BenchmarkTest00048",
+    "BenchmarkTest00049",
+    "BenchmarkTest00050",
+    "BenchmarkTest00051",
+    "BenchmarkTest00052",
+    "BenchmarkTest00053",
+    "BenchmarkTest00054",
+    "BenchmarkTest00055",
+    "BenchmarkTest00056",
+    "BenchmarkTest00057",
+    "BenchmarkTest00058",
+    "BenchmarkTest00059",
+    "BenchmarkTest00060",
+    "BenchmarkTest00061",
+    "BenchmarkTest00062",
+    "BenchmarkTest00063",
+    "BenchmarkTest00064",
+    "BenchmarkTest00065",
+    "BenchmarkTest00066",
+    "BenchmarkTest00067",
+    "BenchmarkTest00068",
+    "BenchmarkTest00069",
+    "BenchmarkTest00070",
+    "BenchmarkTest00071",
+    "BenchmarkTest00072",
+    "BenchmarkTest00073",
+    "BenchmarkTest00074",
+    "BenchmarkTest00075",
+    "BenchmarkTest00076",
+    "BenchmarkTest00077",
+    "BenchmarkTest00078",
+    "BenchmarkTest00079",
+    "BenchmarkTest00080",
+    "BenchmarkTest00081",
+    "BenchmarkTest00082",
+    "BenchmarkTest00083",
+    "BenchmarkTest00084",
+    "BenchmarkTest00085",
+    "BenchmarkTest00086",
+    "BenchmarkTest00087",
+    "BenchmarkTest00088",
+    "BenchmarkTest00089",
+    "BenchmarkTest00090",
+    "BenchmarkTest00091",
+    "BenchmarkTest00092",
+    "BenchmarkTest00093",
+    "BenchmarkTest00094",
+    "BenchmarkTest00095",
+    "BenchmarkTest00096",
+    "BenchmarkTest00097",
+    "BenchmarkTest00098",
+    "BenchmarkTest00099",
+    "BenchmarkTest00100"
   ],
   "errors": [],
-  "total_findings": 8,
-  "wall_clock_seconds": 987.54,
-  "metis_duration_seconds": 840.19,
+  "total_findings": 1,
+  "wall_clock_seconds": 6206.45,
+  "metis_duration_seconds": 59.67,
   "tokens": {
     "source": "metis_native",
-    "input_tokens": 60340,
-    "output_tokens": 19103,
-    "total_tokens": 79443
+    "input_tokens": 29432,
+    "output_tokens": 2962,
+    "total_tokens": 32394
   },
   "ground_truth": {
     "source": "expectedresults-1.2.csv",
     "strict": {
-      "TP": 3,
+      "TP": 1,
       "FP": 0,
-      "FN": 3,
-      "TN": 0,
+      "FN": 74,
+      "TN": 25,
       "precision": 1.0,
-      "recall": 0.5,
-      "fpr": null,
-      "youden": null
+      "recall": 0.013333333333333334,
+      "fpr": 0.0,
+      "youden": 0.013333333333333334
     },
     "lenient": {
       "TP": 1,
       "FP": 0,
-      "FN": 5,
-      "TN": 0,
+      "FN": 74,
+      "TN": 25,
       "precision": 1.0,
-      "recall": 0.16666666666666666,
-      "fpr": null,
-      "youden": null
+      "recall": 0.013333333333333334,
+      "fpr": 0.0,
+      "youden": 0.013333333333333334
     },
     "per_test": {
       "BenchmarkTest00001": {
@@ -80,15 +174,15 @@
         "runs": [
           {
             "expected": true,
-            "strict": true,
+            "strict": false,
             "lenient": false,
-            "outcome_strict": "TP",
+            "outcome_strict": "FN",
             "outcome_lenient": "FN",
-            "on_target": 1,
-            "off_target": 2,
-            "total": 3,
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
             "dismissed": 0,
-            "inconclusive": 3,
+            "inconclusive": 0,
             "run": 1
           }
         ]
@@ -125,10 +219,10 @@
             "outcome_strict": "FN",
             "outcome_lenient": "FN",
             "on_target": 0,
-            "off_target": 1,
-            "total": 1,
+            "off_target": 0,
+            "total": 0,
             "dismissed": 0,
-            "inconclusive": 1,
+            "inconclusive": 0,
             "run": 1
           }
         ]
@@ -140,15 +234,15 @@
         "runs": [
           {
             "expected": true,
-            "strict": true,
+            "strict": false,
             "lenient": false,
-            "outcome_strict": "TP",
+            "outcome_strict": "FN",
             "outcome_lenient": "FN",
-            "on_target": 1,
-            "off_target": 2,
-            "total": 3,
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
             "dismissed": 0,
-            "inconclusive": 3,
+            "inconclusive": 0,
             "run": 1
           }
         ]
@@ -156,6 +250,1886 @@
       "BenchmarkTest00006": {
         "category": "cmdi",
         "cwe": 78,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00007": {
+        "category": "cmdi",
+        "cwe": 78,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00008": {
+        "category": "sqli",
+        "cwe": 89,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00009": {
+        "category": "hash",
+        "cwe": 328,
+        "expected_vulnerable": false,
+        "runs": [
+          {
+            "expected": false,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "TN",
+            "outcome_lenient": "TN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00010": {
+        "category": "weakrand",
+        "cwe": 330,
+        "expected_vulnerable": false,
+        "runs": [
+          {
+            "expected": false,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "TN",
+            "outcome_lenient": "TN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00011": {
+        "category": "pathtraver",
+        "cwe": 22,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00012": {
+        "category": "ldapi",
+        "cwe": 90,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00013": {
+        "category": "xss",
+        "cwe": 79,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00014": {
+        "category": "xss",
+        "cwe": 79,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00015": {
+        "category": "cmdi",
+        "cwe": 78,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00016": {
+        "category": "securecookie",
+        "cwe": 614,
+        "expected_vulnerable": false,
+        "runs": [
+          {
+            "expected": false,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "TN",
+            "outcome_lenient": "TN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00017": {
+        "category": "cmdi",
+        "cwe": 78,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00018": {
+        "category": "sqli",
+        "cwe": 89,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00019": {
+        "category": "crypto",
+        "cwe": 327,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00020": {
+        "category": "crypto",
+        "cwe": 327,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00021": {
+        "category": "ldapi",
+        "cwe": 90,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00022": {
+        "category": "hash",
+        "cwe": 328,
+        "expected_vulnerable": false,
+        "runs": [
+          {
+            "expected": false,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "TN",
+            "outcome_lenient": "TN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00023": {
+        "category": "weakrand",
+        "cwe": 330,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00024": {
+        "category": "sqli",
+        "cwe": 89,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00025": {
+        "category": "sqli",
+        "cwe": 89,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00026": {
+        "category": "sqli",
+        "cwe": 89,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00027": {
+        "category": "sqli",
+        "cwe": 89,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00028": {
+        "category": "pathtraver",
+        "cwe": 22,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00029": {
+        "category": "hash",
+        "cwe": 328,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00030": {
+        "category": "xss",
+        "cwe": 79,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00031": {
+        "category": "trustbound",
+        "cwe": 501,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00032": {
+        "category": "sqli",
+        "cwe": 89,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00033": {
+        "category": "sqli",
+        "cwe": 89,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00034": {
+        "category": "sqli",
+        "cwe": 89,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00035": {
+        "category": "crypto",
+        "cwe": 327,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00036": {
+        "category": "xss",
+        "cwe": 79,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00037": {
+        "category": "sqli",
+        "cwe": 89,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00038": {
+        "category": "sqli",
+        "cwe": 89,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00039": {
+        "category": "sqli",
+        "cwe": 89,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00040": {
+        "category": "pathtraver",
+        "cwe": 22,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00041": {
+        "category": "xss",
+        "cwe": 79,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00042": {
+        "category": "weakrand",
+        "cwe": 330,
+        "expected_vulnerable": false,
+        "runs": [
+          {
+            "expected": false,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "TN",
+            "outcome_lenient": "TN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00043": {
+        "category": "sqli",
+        "cwe": 89,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00044": {
+        "category": "ldapi",
+        "cwe": 90,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00045": {
+        "category": "pathtraver",
+        "cwe": 22,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00046": {
+        "category": "hash",
+        "cwe": 328,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00047": {
+        "category": "xss",
+        "cwe": 79,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00048": {
+        "category": "xss",
+        "cwe": 79,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00049": {
+        "category": "xss",
+        "cwe": 79,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00050": {
+        "category": "crypto",
+        "cwe": 327,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00051": {
+        "category": "cmdi",
+        "cwe": 78,
+        "expected_vulnerable": false,
+        "runs": [
+          {
+            "expected": false,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "TN",
+            "outcome_lenient": "TN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00052": {
+        "category": "sqli",
+        "cwe": 89,
+        "expected_vulnerable": false,
+        "runs": [
+          {
+            "expected": false,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "TN",
+            "outcome_lenient": "TN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00053": {
+        "category": "crypto",
+        "cwe": 327,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00054": {
+        "category": "crypto",
+        "cwe": 327,
+        "expected_vulnerable": false,
+        "runs": [
+          {
+            "expected": false,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "TN",
+            "outcome_lenient": "TN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00055": {
+        "category": "crypto",
+        "cwe": 327,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00056": {
+        "category": "crypto",
+        "cwe": 327,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00057": {
+        "category": "crypto",
+        "cwe": 327,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00058": {
+        "category": "crypto",
+        "cwe": 327,
+        "expected_vulnerable": false,
+        "runs": [
+          {
+            "expected": false,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "TN",
+            "outcome_lenient": "TN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00059": {
+        "category": "crypto",
+        "cwe": 327,
+        "expected_vulnerable": false,
+        "runs": [
+          {
+            "expected": false,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "TN",
+            "outcome_lenient": "TN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00060": {
+        "category": "pathtraver",
+        "cwe": 22,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00061": {
+        "category": "pathtraver",
+        "cwe": 22,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00062": {
+        "category": "pathtraver",
+        "cwe": 22,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00063": {
+        "category": "pathtraver",
+        "cwe": 22,
+        "expected_vulnerable": false,
+        "runs": [
+          {
+            "expected": false,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "TN",
+            "outcome_lenient": "TN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00064": {
+        "category": "pathtraver",
+        "cwe": 22,
+        "expected_vulnerable": false,
+        "runs": [
+          {
+            "expected": false,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "TN",
+            "outcome_lenient": "TN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00065": {
+        "category": "pathtraver",
+        "cwe": 22,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00066": {
+        "category": "weakrand",
+        "cwe": 330,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00067": {
+        "category": "weakrand",
+        "cwe": 330,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00068": {
+        "category": "weakrand",
+        "cwe": 330,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00069": {
+        "category": "hash",
+        "cwe": 328,
+        "expected_vulnerable": false,
+        "runs": [
+          {
+            "expected": false,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "TN",
+            "outcome_lenient": "TN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00070": {
+        "category": "hash",
+        "cwe": 328,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00071": {
+        "category": "hash",
+        "cwe": 328,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00072": {
+        "category": "hash",
+        "cwe": 328,
+        "expected_vulnerable": false,
+        "runs": [
+          {
+            "expected": false,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "TN",
+            "outcome_lenient": "TN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00073": {
+        "category": "hash",
+        "cwe": 328,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00074": {
+        "category": "hash",
+        "cwe": 328,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00075": {
+        "category": "hash",
+        "cwe": 328,
+        "expected_vulnerable": false,
+        "runs": [
+          {
+            "expected": false,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "TN",
+            "outcome_lenient": "TN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00076": {
+        "category": "hash",
+        "cwe": 328,
+        "expected_vulnerable": false,
+        "runs": [
+          {
+            "expected": false,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "TN",
+            "outcome_lenient": "TN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00077": {
+        "category": "cmdi",
+        "cwe": 78,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00078": {
+        "category": "weakrand",
+        "cwe": 330,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00079": {
+        "category": "weakrand",
+        "cwe": 330,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00080": {
+        "category": "weakrand",
+        "cwe": 330,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00081": {
+        "category": "weakrand",
+        "cwe": 330,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00082": {
+        "category": "weakrand",
+        "cwe": 330,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00083": {
+        "category": "weakrand",
+        "cwe": 330,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00084": {
+        "category": "weakrand",
+        "cwe": 330,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00085": {
+        "category": "weakrand",
+        "cwe": 330,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00086": {
+        "category": "weakrand",
+        "cwe": 330,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00087": {
+        "category": "securecookie",
+        "cwe": 614,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00088": {
+        "category": "securecookie",
+        "cwe": 614,
+        "expected_vulnerable": false,
+        "runs": [
+          {
+            "expected": false,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "TN",
+            "outcome_lenient": "TN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00089": {
+        "category": "securecookie",
+        "cwe": 614,
+        "expected_vulnerable": false,
+        "runs": [
+          {
+            "expected": false,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "TN",
+            "outcome_lenient": "TN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00090": {
+        "category": "cmdi",
+        "cwe": 78,
+        "expected_vulnerable": false,
+        "runs": [
+          {
+            "expected": false,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "TN",
+            "outcome_lenient": "TN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00091": {
+        "category": "cmdi",
+        "cwe": 78,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00092": {
+        "category": "cmdi",
+        "cwe": 78,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00093": {
+        "category": "cmdi",
+        "cwe": 78,
+        "expected_vulnerable": false,
+        "runs": [
+          {
+            "expected": false,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "TN",
+            "outcome_lenient": "TN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00094": {
+        "category": "weakrand",
+        "cwe": 330,
+        "expected_vulnerable": false,
+        "runs": [
+          {
+            "expected": false,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "TN",
+            "outcome_lenient": "TN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00095": {
+        "category": "weakrand",
+        "cwe": 330,
+        "expected_vulnerable": false,
+        "runs": [
+          {
+            "expected": false,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "TN",
+            "outcome_lenient": "TN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00096": {
+        "category": "weakrand",
+        "cwe": 330,
+        "expected_vulnerable": false,
+        "runs": [
+          {
+            "expected": false,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "TN",
+            "outcome_lenient": "TN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00097": {
+        "category": "trustbound",
+        "cwe": 501,
+        "expected_vulnerable": false,
+        "runs": [
+          {
+            "expected": false,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "TN",
+            "outcome_lenient": "TN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00098": {
+        "category": "trustbound",
+        "cwe": 501,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "FN",
+            "outcome_lenient": "FN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00099": {
+        "category": "trustbound",
+        "cwe": 501,
+        "expected_vulnerable": false,
+        "runs": [
+          {
+            "expected": false,
+            "strict": false,
+            "lenient": false,
+            "outcome_strict": "TN",
+            "outcome_lenient": "TN",
+            "on_target": 0,
+            "off_target": 0,
+            "total": 0,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00100": {
+        "category": "sqli",
+        "cwe": 89,
         "expected_vulnerable": true,
         "runs": [
           {
@@ -185,142 +2159,114 @@
         ],
         "severity": "High",
         "confidence": 1.0,
-        "reasoning": "The cookie value is taken from the request (attacker-controlled) and used directly in constructing a file path by concatenation. No validation, sanitization, or normalization is performed to prevent path traversal sequences like '../'. An attacker can supply a cookie value containing path traversal characters to read arbitrary files outside the intended directory.",
-        "mitigation": "Validate the cookie value to ensure it does not contain path traversal sequences (e.g., '../' or '..\\'). Use a whitelist of allowed file names, or resolve the path to its canonical form and verify it stays within the intended base directory.",
+        "reasoning": "The doPost method reads the 'BenchmarkTest00001' cookie from the HTTP request (line 60-61), URL-decodes it (line 61), and directly concatenates the decoded value to a base directory path on line 71. The resulting path is then used to open and read a file via FileInputStream on line 72. No validation, sanitization, or canonicalization is performed on the cookie value to prevent directory traversal sequences such as '../'. An attacker can set this cookie to values like '../../../../etc/passwd' to read arbitrary files outside the intended directory, leading to unauthorized disclosure of sensitive information.",
+        "mitigation": "Validate and sanitize the input by resolving the canonical path and verifying it stays within the intended base directory. For example, use java.nio.file.Path.resolve() with Path.normalize() and then check that the result starts with the base directory. Reject any input containing path traversal sequences (e.g., '..') or restrict the parameter to a whitelist of allowed filenames.",
         "status": "valid",
         "triaged": true,
-        "triage_reason": "Verdict: The finding is valid because attacker-controlled cookie value flows unsanitized into file path construction, enabling path traversal. Evidence: The cookie value is read at line 61 via URLDecoder.decode(theCookie.getValue(), ...), assigned to param, then concatenated to TESTFILES_DIR and used to open a FileInputStream at the reported lines (visible in finding snippet around lines 67-69). No validation, sanitization, or canonical-path check is present in the doPost method. Gap: none.",
+        "triage_reason": "Cookie value is URL-decoded into `param` (line 61) and directly concatenated to a base directory path to construct `fileName` (line 71), then passed to `FileInputStream` (line 72) with no validation, sanitization, canonicalization, or path-boundary check.",
         "line": 57,
-        "snippet": "String param = \"noCookieValueSupplied\";\nif (theCookies != null) {\n    for (javax.servlet.http.Cookie theCookie : theCookies) {\n        if (theCookie.getName().equals(\"BenchmarkTest00001\")) {\n            param = java.net.URLDecoder.decode(theCookie.getValue(), \"UTF-8\");\n            break;\n        }\n    }\n}\n\nString fileName = null;\njava.io.FileInputStream fis = null;\n\ntry {\n    fileName = org.owasp.benchmark.helpers.Utils.TESTFILES_DIR + param;\n    fis = new java.io.FileInputStream(new java.io.File(fileName));",
-        "issue": "Path traversal via attacker-controlled cookie value"
+        "snippet": "String param = \"noCookieValueSupplied\";\n        if (theCookies != null) {\n            for (javax.servlet.http.Cookie theCookie : theCookies) {\n                if (theCookie.getName().equals(\"BenchmarkTest00001\")) {\n                    param = java.net.URLDecoder.decode(theCookie.getValue(), \"UTF-8\");\n                    break;\n                }\n            }\n        }\n\n        String fileName = null;\n        java.io.FileInputStream fis = null;\n\n        try {\n            fileName = org.owasp.benchmark.helpers.Utils.TESTFILES_DIR + param;\n            fis = new java.io.FileInputStream(new java.io.File(fileName));",
+        "issue": "Path Traversal: User-controlled cookie value is used to construct a file path without validation, allowing arbitrary file reads."
       }
     ],
-    "BenchmarkTest00002": [
-      {
-        "run": 1,
-        "cwe_raw": "CWE-22",
-        "cwes": [
-          22
-        ],
-        "severity": "Critical",
-        "confidence": 0.95,
-        "reasoning": "The doPost method reads the cookie 'BenchmarkTest00002' from the request and uses its value (after URL decoding) to construct a file path by concatenating it with a base directory. The user-controlled cookie value is not validated or sanitized, allowing an attacker to supply path traversal sequences (e.g., '../../etc/passwd') to write to arbitrary files on the server. This is a classic path traversal vulnerability (CWE-22).",
-        "mitigation": "Validate the cookie value against a whitelist of allowed filenames. Use a canonical path check: File.getCanonicalPath() and verify it starts with the intended base directory. Alternatively, avoid using user input in file paths altogether.",
-        "status": "inconclusive",
-        "triaged": true,
-        "triage_reason": "Inconclusive because the triage model did not return a valid decision payload.",
-        "line": 57,
-        "snippet": "String param = \"noCookieValueSupplied\";\nif (theCookies != null) {\n    for (javax.servlet.http.Cookie theCookie : theCookies) {\n        if (theCookie.getName().equals(\"BenchmarkTest00002\")) {\n            param = java.net.URLDecoder.decode(theCookie.getValue(), \"UTF-8\");\n            break;\n        }\n    }\n}\n\nString fileName = null;\njava.io.FileOutputStream fos = null;\n\ntry {\n    fileName = org.owasp.benchmark.helpers.Utils.TESTFILES_DIR + param;\n\n    fos = new java.io.FileOutputStream(fileName, false);",
-        "issue": "Path Traversal via Unvalidated Cookie Value in FileOutputStream"
-      },
-      {
-        "run": 1,
-        "cwe_raw": "CWE-15",
-        "cwes": [
-          15
-        ],
-        "severity": "High",
-        "confidence": 0.8,
-        "reasoning": "The cookie domain is set using the host obtained from request.getRequestURL(), which is derived from the HTTP Host header. An attacker can manipulate the Host header to control the cookie's domain attribute, potentially causing the cookie to be sent to an attacker-controlled domain. This can lead to session fixation, cookie theft, or unintended disclosure of cookie values. Although the cookie value in this specific test is hardcoded and non-sensitive, the vulnerable pattern is present.",
-        "mitigation": "Do not set the cookie domain based on user-controlled input. Either omit the domain attribute (which defaults to the origin that set the cookie) or hardcode it to the application's authoritative domain after validating that it matches an expected value.",
-        "status": "inconclusive",
-        "triaged": true,
-        "triage_reason": "Inconclusive because the triage model did not return a valid decision payload.",
-        "line": 42,
-        "snippet": "userCookie.setDomain(new java.net.URL(request.getRequestURL().toString()).getHost());",
-        "issue": "Cookie Domain Set from Host Header (Cookie Injection)"
-      },
-      {
-        "run": 1,
-        "cwe_raw": "CWE-200",
-        "cwes": [
-          200
-        ],
-        "severity": "Low",
-        "confidence": 0.7,
-        "reasoning": "When a FileOutputStream fails to open, the constructed file path (which includes user-controlled input) is printed to standard output. In production environments, stdout/stderr often end up in log files that may be accessible to attackers, leaking internal file system layout and potentially confirming the presence of path traversal vulnerabilities.",
-        "mitigation": "Use a logging framework with appropriate log levels and sanitize sensitive data before logging. Avoid printing user-controlled file paths to consoles or logs.",
-        "status": "inconclusive",
-        "triaged": true,
-        "triage_reason": "Inconclusive because the triage model did not return a valid decision payload.",
-        "line": 80,
-        "snippet": "System.out.println(\"Couldn't open FileOutputStream on file: '\" + fileName + \"'\");",
-        "issue": "Sensitive File Path Leaked via Console Output"
-      }
-    ],
+    "BenchmarkTest00002": [],
     "BenchmarkTest00003": [],
-    "BenchmarkTest00004": [
-      {
-        "run": 1,
-        "cwe_raw": "CWE-807",
-        "cwes": [
-          807
-        ],
-        "severity": "High",
-        "confidence": 0.85,
-        "reasoning": "The param variable is derived from a cookie value without validation and used directly as the key for setting a session attribute. An attacker can control which session attribute is set by providing a crafted cookie. While the value is fixed to \"10340\", this could allow overwriting existing session attributes that may be used for security decisions (e.g., authentication state, roles). This constitutes a trust boundary violation.",
-        "mitigation": "Validate and sanitize the cookie value against a whitelist of allowed session attribute names, or use a fixed attribute name that is not derived from user input. Consider mapping user-supplied identifiers to safe internal attribute names.",
-        "status": "inconclusive",
-        "triaged": true,
-        "triage_reason": "Inconclusive because the triage model did not return a valid decision payload.",
-        "line": 57,
-        "snippet": "String param = \"noCookieValueSupplied\";\nif (theCookies != null) {\n    for (javax.servlet.http.Cookie theCookie : theCookies) {\n        if (theCookie.getName().equals(\"BenchmarkTest00004\")) {\n            param = java.net.URLDecoder.decode(theCookie.getValue(), \"UTF-8\");\n            break;\n        }\n    }\n}\n\n// javax.servlet.http.HttpSession.setAttribute(java.lang.String^,java.lang.Object)\nrequest.getSession().setAttribute(param, \"10340\");",
-        "issue": "User-controlled cookie value used as session attribute key without validation"
-      }
-    ],
-    "BenchmarkTest00005": [
-      {
-        "run": 1,
-        "cwe_raw": "CWE-327",
-        "cwes": [
-          327
-        ],
-        "severity": "High",
-        "confidence": 1.0,
-        "reasoning": "The code uses DES, which is a deprecated algorithm with a 56-bit key that can be brute-forced with modern hardware. Even though the key is randomly generated each time, the algorithm itself is considered broken and provides insufficient confidentiality protection. An attacker who obtains the ciphertext (stored in passwordFile.txt) could recover the plaintext with moderate effort.",
-        "mitigation": "Replace DES with a strong modern algorithm such as AES (e.g., \"AES/GCM/NoPadding\") with a key size of at least 128 bits. Use KeyGenerator.getInstance(\"AES\") and an appropriate initialization vector.",
-        "status": "inconclusive",
-        "triaged": true,
-        "triage_reason": "Inconclusive because the triage model did not return a valid decision payload.",
-        "line": 63,
-        "snippet": "javax.crypto.Cipher c = javax.crypto.Cipher.getInstance(\"DES/CBC/PKCS5Padding\");\n\n            // Prepare the cipher to encrypt\n            javax.crypto.SecretKey key = javax.crypto.KeyGenerator.getInstance(\"DES\").generateKey();",
-        "issue": "Use of broken or risky cryptographic algorithm DES"
-      },
-      {
-        "run": 1,
-        "cwe_raw": "CWE-209",
-        "cwes": [
-          209
-        ],
-        "severity": "Medium",
-        "confidence": 1.0,
-        "reasoning": "The catch block writes the full stack trace of the exception to the HTTP response via e.printStackTrace(response.getWriter()). This exposes internal implementation details such as class names, method names, line numbers, and potentially sensitive system paths to the client, aiding an attacker in understanding the application's internals and crafting further attacks.",
-        "mitigation": "Remove the call to e.printStackTrace(response.getWriter()). Instead, log the stack trace server-side and return a generic error message to the client. For example, use a logging framework and return a simple 500 error page.",
-        "status": "inconclusive",
-        "triaged": true,
-        "triage_reason": "Inconclusive because the triage model did not return a valid decision payload.",
-        "line": 115,
-        "snippet": "response.getWriter()\n                    .println(\n                            \"Problem executing crypto - javax.crypto.Cipher.getInstance(java.lang.String,java.security.Provider) Test Case\");\n            e.printStackTrace(response.getWriter());\n            throw new ServletException(e);",
-        "issue": "Information exposure through stack trace in HTTP response"
-      },
-      {
-        "run": 1,
-        "cwe_raw": "CWE-209",
-        "cwes": [
-          209
-        ],
-        "severity": "Low",
-        "confidence": 0.85,
-        "reasoning": "The call to java.net.URLDecoder.decode(param, \"UTF-8\") can throw IllegalArgumentException if the input string contains malformed percent-encoding (e.g., \"%ZZ\" or incomplete \"%X\"). This exception is not caught by any try-catch block (the surrounding try block starts at line 62, after this decode), so it propagates to the servlet container. The container may return an error response that includes a stack trace, leaking internal information, or it may cause a denial of service if the exception disrupts request handling. An attacker can trigger this by sending a specially crafted header value.",
-        "mitigation": "Wrap the URLDecoder.decode call in a try-catch block that specifically catches IllegalArgumentException. In the catch block, either log the error and return a 400 Bad Request response, or safely handle the malformed input without exposing stack traces.",
-        "status": "inconclusive",
-        "triaged": true,
-        "triage_reason": "Inconclusive because the triage model did not return a valid decision payload.",
-        "line": 50,
-        "snippet": "param = java.net.URLDecoder.decode(param, \"UTF-8\");",
-        "issue": "Unhandled IllegalArgumentException from URLDecoder.decode leading to potential information disclosure or denial of service"
-      }
-    ],
-    "BenchmarkTest00006": []
+    "BenchmarkTest00004": [],
+    "BenchmarkTest00005": [],
+    "BenchmarkTest00006": [],
+    "BenchmarkTest00007": [],
+    "BenchmarkTest00008": [],
+    "BenchmarkTest00009": [],
+    "BenchmarkTest00010": [],
+    "BenchmarkTest00011": [],
+    "BenchmarkTest00012": [],
+    "BenchmarkTest00013": [],
+    "BenchmarkTest00014": [],
+    "BenchmarkTest00015": [],
+    "BenchmarkTest00016": [],
+    "BenchmarkTest00017": [],
+    "BenchmarkTest00018": [],
+    "BenchmarkTest00019": [],
+    "BenchmarkTest00020": [],
+    "BenchmarkTest00021": [],
+    "BenchmarkTest00022": [],
+    "BenchmarkTest00023": [],
+    "BenchmarkTest00024": [],
+    "BenchmarkTest00025": [],
+    "BenchmarkTest00026": [],
+    "BenchmarkTest00027": [],
+    "BenchmarkTest00028": [],
+    "BenchmarkTest00029": [],
+    "BenchmarkTest00030": [],
+    "BenchmarkTest00031": [],
+    "BenchmarkTest00032": [],
+    "BenchmarkTest00033": [],
+    "BenchmarkTest00034": [],
+    "BenchmarkTest00035": [],
+    "BenchmarkTest00036": [],
+    "BenchmarkTest00037": [],
+    "BenchmarkTest00038": [],
+    "BenchmarkTest00039": [],
+    "BenchmarkTest00040": [],
+    "BenchmarkTest00041": [],
+    "BenchmarkTest00042": [],
+    "BenchmarkTest00043": [],
+    "BenchmarkTest00044": [],
+    "BenchmarkTest00045": [],
+    "BenchmarkTest00046": [],
+    "BenchmarkTest00047": [],
+    "BenchmarkTest00048": [],
+    "BenchmarkTest00049": [],
+    "BenchmarkTest00050": [],
+    "BenchmarkTest00051": [],
+    "BenchmarkTest00052": [],
+    "BenchmarkTest00053": [],
+    "BenchmarkTest00054": [],
+    "BenchmarkTest00055": [],
+    "BenchmarkTest00056": [],
+    "BenchmarkTest00057": [],
+    "BenchmarkTest00058": [],
+    "BenchmarkTest00059": [],
+    "BenchmarkTest00060": [],
+    "BenchmarkTest00061": [],
+    "BenchmarkTest00062": [],
+    "BenchmarkTest00063": [],
+    "BenchmarkTest00064": [],
+    "BenchmarkTest00065": [],
+    "BenchmarkTest00066": [],
+    "BenchmarkTest00067": [],
+    "BenchmarkTest00068": [],
+    "BenchmarkTest00069": [],
+    "BenchmarkTest00070": [],
+    "BenchmarkTest00071": [],
+    "BenchmarkTest00072": [],
+    "BenchmarkTest00073": [],
+    "BenchmarkTest00074": [],
+    "BenchmarkTest00075": [],
+    "BenchmarkTest00076": [],
+    "BenchmarkTest00077": [],
+    "BenchmarkTest00078": [],
+    "BenchmarkTest00079": [],
+    "BenchmarkTest00080": [],
+    "BenchmarkTest00081": [],
+    "BenchmarkTest00082": [],
+    "BenchmarkTest00083": [],
+    "BenchmarkTest00084": [],
+    "BenchmarkTest00085": [],
+    "BenchmarkTest00086": [],
+    "BenchmarkTest00087": [],
+    "BenchmarkTest00088": [],
+    "BenchmarkTest00089": [],
+    "BenchmarkTest00090": [],
+    "BenchmarkTest00091": [],
+    "BenchmarkTest00092": [],
+    "BenchmarkTest00093": [],
+    "BenchmarkTest00094": [],
+    "BenchmarkTest00095": [],
+    "BenchmarkTest00096": [],
+    "BenchmarkTest00097": [],
+    "BenchmarkTest00098": [],
+    "BenchmarkTest00099": [],
+    "BenchmarkTest00100": []
   }
 }

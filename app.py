@@ -44,6 +44,12 @@ KIND_UNIT = {"bench": "run", "sweep": "variant", "ablation": "arm"}
 # when it cannot, and never moves anything else on the page.
 PAGE_CSS = """
 <style>
+/* `st.html` lands as a real element in the vertical flow, and a stylesheet is not
+   content — left visible it opens a gap above every page title. */
+[data-testid="stElementContainer"]:has(> [data-testid="stHtml"] > style) {
+    display: none;
+}
+
 [data-testid="stMarkdownContainer"] table {
     display: block;
     width: fit-content;
@@ -94,13 +100,40 @@ def render_readonly_run_notice() -> None:
         )
 
 
+def _plural(count: int, unit: str) -> str:
+    return unit if count == 1 else f"{unit}s"
+
+
+def render_progress_bar(status: scan_runner.RunStatus) -> None:
+    """The FR16 bar. Absent — not zeroed, not animated — when the seam reports no
+    countable signal, so the page never implies a measurement nobody made."""
+    progress = status.progress
+    if progress is None:
+        st.caption(
+            "Waiting for the first countable step — the log below is live in the meantime."
+        )
+        return
+
+    st.progress(progress.fraction)
+    done_text = f"**{progress.done} / {progress.total}** {_plural(progress.total, progress.unit)}"
+    if status.state == "running" and progress.current:
+        st.caption(f"{done_text} · now scanning `{progress.current}`")
+    elif status.state == "running":
+        st.caption(f"{done_text} · starting…")
+    else:
+        st.caption(done_text)
+
+
 @st.fragment(run_every=1)
 def render_run_progress(handle: scan_runner.RunHandle) -> None:
     status = scan_runner.poll_run(handle)
     label = STATUS_LABEL[status.state]
+    if status.progress is not None and status.state == "running":
+        label += f" — {status.progress.done}/{status.progress.total}"
     if status.returncode is not None:
         label += f" (exit code {status.returncode})"
     with st.status(label, state=STATUS_STATE[status.state], expanded=status.state != "done"):
+        render_progress_bar(status)
         st.code(status.log_tail or "(no output yet)", language=None)
 
 
@@ -112,6 +145,14 @@ def render_active_run_badge() -> None:
         return
     status = scan_runner.poll_run(handle)
     st.markdown(f"{STATUS_ICON[status.state]} **{STATUS_LABEL[status.state]}**")
+    # The badge is on every page, so a run stays watchable while reading Results or
+    # Matrix — the same counted numbers, no second source of truth.
+    if status.progress is not None:
+        st.progress(status.progress.fraction)
+        st.caption(
+            f"{status.progress.done} / {status.progress.total} "
+            f"{_plural(status.progress.total, status.progress.unit)}"
+        )
     st.caption(shlex.join(handle.command))
 
 
@@ -729,17 +770,31 @@ is_readonly = scan_runner.runtime_mode() == "readonly"
 st.sidebar.markdown("### :material/security: Scan BenchmarkJava")
 st.sidebar.caption("Metis vs OWASP BenchmarkJava")
 
-# A read-only instance lands on Results — the page it can actually serve — rather than
-# on a Run Scan page whose only content is why it is unavailable.
+# Streamlit serves the default page at `/` and IGNORES its `url_path`, so exactly one
+# page can never be linked to by name — asking for it opened a "Page not found" dialog.
+# Making `default` mode-dependent made that worse: the dead link was `/run` locally but
+# `/results` on the deploy, so the most shareable URL of the read-only instance was the
+# one that 404'd. Run Scan is the default on both instances now and answers to `/` (no
+# `url_path`, because it would be a promise Streamlit does not keep); Results, Matrix and
+# Knowledge Base each keep a URL that resolves everywhere (nav: deep-linking).
+run_page = st.Page(page_run_scan, title="Run Scan", icon=":material/play_circle:",
+                   default=True)
+results_page = st.Page(page_results, title="Results", icon=":material/bar_chart:",
+                       url_path="results")
 pages = [
-    st.Page(page_run_scan, title="Run Scan", icon=":material/play_circle:", url_path="run",
-            default=not is_readonly),
-    st.Page(page_results, title="Results", icon=":material/bar_chart:", url_path="results",
-            default=is_readonly),
+    run_page,
+    results_page,
     st.Page(page_matrix, title="Matrix", icon=":material/grid_on:", url_path="matrix"),
     st.Page(page_knowledge_base, title="Knowledge Base", icon=":material/search:", url_path="knowledge-base"),
 ]
 current_page = st.navigation(pages)
+
+# A read-only instance still LANDS on Results — the page it can actually serve — rather
+# than on a Run Scan page whose only content is why it is unavailable. Once per session,
+# and only for someone who arrived at `/`: a deep link to any page is left alone.
+if is_readonly and current_page == run_page and not st.session_state.get("landed"):
+    st.session_state.landed = True
+    st.switch_page(results_page)
 
 with st.sidebar:
     st.divider()

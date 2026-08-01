@@ -1,0 +1,151 @@
+{
+  "generated_at": "2026-08-01T07:39:28.804932+00:00",
+  "tag": "c015_progress",
+  "scan_model": "deepseek-v4-pro",
+  "base_url": "https://opencode.ai/zen/go/v1",
+  "metis_version": "1.5.0",
+  "metis_git": "0d6673a",
+  "triage": true,
+  "max_rounds": 6,
+  "max_workers": 2,
+  "parallel": 4,
+  "repeat": 1,
+  "sample_size": 2,
+  "selection": "first-N-by-name",
+  "tests": [
+    "BenchmarkTest00001",
+    "BenchmarkTest00002"
+  ],
+  "errors": [],
+  "total_findings": 3,
+  "wall_clock_seconds": 158.04,
+  "metis_duration_seconds": 153.14,
+  "tokens": {
+    "source": "metis_native",
+    "input_tokens": 87749,
+    "output_tokens": 8669,
+    "total_tokens": 96418
+  },
+  "ground_truth": {
+    "source": "expectedresults-1.2.csv",
+    "strict": {
+      "TP": 2,
+      "FP": 0,
+      "FN": 0,
+      "TN": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "fpr": null,
+      "youden": null
+    },
+    "lenient": {
+      "TP": 2,
+      "FP": 0,
+      "FN": 0,
+      "TN": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "fpr": null,
+      "youden": null
+    },
+    "per_test": {
+      "BenchmarkTest00001": {
+        "category": "pathtraver",
+        "cwe": 22,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": true,
+            "lenient": true,
+            "outcome_strict": "TP",
+            "outcome_lenient": "TP",
+            "on_target": 1,
+            "off_target": 0,
+            "total": 1,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      },
+      "BenchmarkTest00002": {
+        "category": "pathtraver",
+        "cwe": 22,
+        "expected_vulnerable": true,
+        "runs": [
+          {
+            "expected": true,
+            "strict": true,
+            "lenient": true,
+            "outcome_strict": "TP",
+            "outcome_lenient": "TP",
+            "on_target": 1,
+            "off_target": 1,
+            "total": 2,
+            "dismissed": 0,
+            "inconclusive": 0,
+            "run": 1
+          }
+        ]
+      }
+    }
+  },
+  "findings": {
+    "BenchmarkTest00001": [
+      {
+        "run": 1,
+        "cwe_raw": "CWE-22",
+        "cwes": [
+          22
+        ],
+        "severity": "High",
+        "confidence": 0.98,
+        "reasoning": "The doPost method reads a cookie named 'BenchmarkTest00001' from the HTTP request (line 55–64), URL-decodes its value into the variable 'param' (line 61), and directly concatenates it with a base directory path to construct a file name (line 71). The resulting filename is then used to open a FileInputStream (line 72) without any path validation, sanitization, or normalization. An attacker can set the cookie value to a path traversal payload such as '../../etc/passwd' or '../../../WEB-INF/web.xml' to read arbitrary files outside the intended directory. The cookie is entirely attacker-controlled via the client, making this a classic path traversal vulnerability.",
+        "mitigation": "Validate and sanitize the 'param' value before constructing the file path. Use a whitelist of allowed filenames, or canonicalize the path and verify that it stays within the intended base directory (e.g., using java.io.File.getCanonicalPath() and checking that it starts with the expected base path). Avoid using user-controlled input directly in file path construction. Alternatively, map user-supplied identifiers to server-side file paths via a lookup table instead of accepting raw paths.",
+        "status": "valid",
+        "triaged": true,
+        "triage_reason": "The cookie value is URL-decoded and directly concatenated into a file path without validation, sanitization, or canonicalization, then passed to FileInputStream, allowing path traversal.",
+        "line": 55,
+        "snippet": "javax.servlet.http.Cookie[] theCookies = request.getCookies();\n\n        String param = \"noCookieValueSupplied\";\n        if (theCookies != null) {\n            for (javax.servlet.http.Cookie theCookie : theCookies) {\n                if (theCookie.getName().equals(\"BenchmarkTest00001\")) {\n                    param = java.net.URLDecoder.decode(theCookie.getValue(), \"UTF-8\");\n                    break;\n                }\n            }\n        }\n\n        String fileName = null;\n        java.io.FileInputStream fis = null;\n\n        try {\n            fileName = org.owasp.benchmark.helpers.Utils.TESTFILES_DIR + param;\n            fis = new java.io.FileInputStream(new java.io.File(fileName));",
+        "issue": "Path Traversal (Arbitrary File Read) via Cookie Parameter"
+      }
+    ],
+    "BenchmarkTest00002": [
+      {
+        "run": 1,
+        "cwe_raw": "CWE-22",
+        "cwes": [
+          22
+        ],
+        "severity": "Critical",
+        "confidence": 0.95,
+        "reasoning": "The application reads the value of the cookie 'BenchmarkTest00002' directly from the HTTP request, URL-decodes it, and concatenates it with TESTFILES_DIR to form a file path. This path is then used to open a FileOutputStream for writing. Since cookies are entirely client-controlled, an attacker can craft a cookie value containing path traversal sequences (e.g., `../../WEB-INF/web.xml` or `%2e%2e%2f` which gets URL-decoded back to `../`) to escape the intended directory and write or overwrite arbitrary files on the server filesystem. The FileOutputStream is opened with `false` for append, meaning existing files will be overwritten. No canonicalization, path validation, or allow-list filtering is performed on the user-controlled input before file system access.",
+        "mitigation": "1. Avoid using user-controlled input directly in file paths. If file selection is required, use a server-side mapping (e.g., an allow-list of safe file names or IDs) rather than accepting raw paths. 2. Validate and sanitize the input by canonicalizing the resulting path and verifying it stays within the intended base directory. 3. Use a security library like ESAPI's Validator or Java's Path.normalize() and Path.startsWith() to enforce directory containment.",
+        "status": "valid",
+        "triaged": true,
+        "triage_reason": "A client-controlled cookie value is URL-decoded and directly concatenated into a filesystem path used to open a FileOutputStream, with no canonicalization, path validation, allow-listing, or directory containment check between the source and sink.",
+        "line": 55,
+        "snippet": "javax.servlet.http.Cookie[] theCookies = request.getCookies();\n\n        String param = \"noCookieValueSupplied\";\n        if (theCookies != null) {\n            for (javax.servlet.http.Cookie theCookie : theCookies) {\n                if (theCookie.getName().equals(\"BenchmarkTest00002\")) {\n                    param = java.net.URLDecoder.decode(theCookie.getValue(), \"UTF-8\");\n                    break;\n                }\n            }\n        }\n\n        String fileName = null;\n        java.io.FileOutputStream fos = null;\n\n        try {\n            fileName = org.owasp.benchmark.helpers.Utils.TESTFILES_DIR + param;\n\n            fos = new java.io.FileOutputStream(fileName, false);",
+        "issue": "Path Traversal via unvalidated cookie input allows writing arbitrary files (CWE-22)"
+      },
+      {
+        "run": 1,
+        "cwe_raw": "CWE-532",
+        "cwes": [
+          532
+        ],
+        "severity": "Low",
+        "confidence": 0.75,
+        "reasoning": "When the FileOutputStream creation fails (e.g., due to an invalid path traversal attempt), the catch block prints the constructed file path to standard output via System.out.println. The `fileName` variable contains the attacker-controlled cookie value concatenated with the server's base directory. This can reveal the internal directory structure and absolute paths of the application to anyone with access to the server logs or console output, aiding further attacks.",
+        "mitigation": "Log sanitized or generic error messages. Avoid including the full, user-influenced file path. Instead, log a fixed identifier or a normalized/redacted version. Ensure structured logging with appropriate log levels (e.g., WARNING) and consider using a logging framework that supports filtering sensitive parameters.",
+        "status": "valid",
+        "triaged": true,
+        "triage_reason": "The catch block at line 80 prints the attacker-influenced fileName to System.out, which includes the server-side TESTFILES_DIR directory path concatenated with a user-controlled cookie value. This leaks internal server directory structure to stdout/logs.",
+        "line": 79,
+        "snippet": "} catch (Exception e) {\n            System.out.println(\"Couldn't open FileOutputStream on file: '\" + fileName + \"'\");\n            //\t\t\tSystem.out.println(\"File exception caught and swallowed: \" + e.getMessage());",
+        "issue": "Information leakage: exception messages reveal server-side file paths in server logs/console (CWE-532)"
+      }
+    ]
+  }
+}

@@ -1,18 +1,18 @@
 {
   "signature": {
-    "scan_model": "deepseek-v4-flash",
+    "scan_model": "deepseek-v4-pro",
     "base_url": "https://opencode.ai/zen/go/v1",
     "engine_override": {
       "reachability_max_paths_per_sink": 1
     },
-    "tests_digest": "37e946e565d63213"
+    "tests_digest": "9db953ca34842859"
   },
-  "wall_clock_seconds": 31.91,
+  "wall_clock_seconds": 229.44,
   "usage": {
-    "input_tokens": 0,
-    "output_tokens": 0,
-    "total_tokens": 0,
-    "duration_seconds": 30.3
+    "input_tokens": 313267,
+    "output_tokens": 48501,
+    "total_tokens": 361768,
+    "duration_seconds": 227.22
   },
-  "ran_at": "2026-08-01T03:01:05.534475+00:00"
+  "ran_at": "2026-08-01T07:13:17.853868+00:00"
 }

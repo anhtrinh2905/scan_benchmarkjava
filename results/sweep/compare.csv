@@ -1,2 +1,2 @@
 variant,minutes,total_tokens,findings,triage_prec,gt_precision,gt_recall,gt_tp,gt_fp,gt_fn,gt_tn
-baseline,0.1,0,0,,,0.0,0,0,8,2
+workers_10,20.9,3810741,118,0.9915254237288136,0.9142857142857143,0.8533333333333334,64,6,11,19

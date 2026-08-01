@@ -10,6 +10,7 @@ import csv
 import importlib
 import json
 import os
+import re
 import subprocess
 import sys
 from collections import Counter
@@ -63,10 +64,22 @@ class RunHandle:
 
 
 @dataclass
+class RunProgress:
+    """How far a running scan has got (FR16). Derived from the log the scripts already
+    write — see `parse_progress`."""
+    done: int
+    total: int
+    fraction: float
+    unit: str
+    current: str
+
+
+@dataclass
 class RunStatus:
     state: Literal["running", "done", "failed"]
     log_tail: str
     returncode: int | None
+    progress: RunProgress | None = None
 
 
 @dataclass
@@ -233,17 +246,123 @@ def start_run(command: list[str]) -> RunHandle:
     return RunHandle(pid=process.pid, command=command, started_at=started_at.isoformat())
 
 
+# --- v1.6: run progress (FR16) ----------------------------------------------------
+#
+# The scripts are NOT modified to emit progress (ADR decision 23): they already print a
+# countable, flushed signal, and `tqdm` would render carriage returns into what is a log
+# FILE, corrupting the very tail this feature reads. So progress is read back out of the
+# output that already exists.
+#
+#   bench      [1/6] BenchmarkTest00001 (smoke) ...      <- a START line, 0 done
+#              [3/6] BenchmarkTest00003 FN/FN (0 finding) <- a COMPLETION line, 3 done
+#   sweep      === variant: workers_10  (...) ===         <- what is in flight
+#                -> 3.4 phút | 310573 token | ...         <- one per completed variant
+#   ablation   same shape as sweep, with "=== arm:"
+#
+# bench prints its own denominator; sweep/ablation do NOT. Their roster line
+# ("Variant sẽ chạy: …") lives in the interactive-confirm branch, which needs `not --yes`
+# AND a TTY — and every UI-launched run is `-y` into a pipe, so the log never contains it
+# (checked against all six archived results/sweep/ui-run-*.log). Their total therefore
+# comes from the argv instead, which `build_command` fully determines.
+
+_BENCH_STEP = re.compile(r"^\[(\d+)/(\d+)\]\s+(\S+)(.*)$")
+_BENCH_SMOKE_DONE = re.compile(r"^\s+->\s+strict=")
+_SECTION = re.compile(r"^===\s+(?:variant|arm):\s+(\S+)")
+
+_BATCH_UNIT = {"sweep": "variant", "ablation": "arm"}
+
+
+def _progress(done: int, total: int, unit: str, current: str) -> RunProgress | None:
+    if total <= 0:
+        return None
+    done = max(0, min(done, total))
+    return RunProgress(
+        done=done, total=total, fraction=done / total, unit=unit, current=current
+    )
+
+
+def _batch_total(command: list[str], kind: Kind) -> int:
+    """How many variants/arms this argv will run: the names given after `--only`, or the
+    script's own full list when `--only` was omitted."""
+    if "--only" in command:
+        rest = command[command.index("--only") + 1:]
+        return len([arg for arg in rest if not arg.startswith("-")])
+    return len(known_only_values(kind))
+
+
+def parse_progress(log_text: str, command: list[str]) -> RunProgress | None:
+    """How far a run has got, from its log so far plus the argv that started it.
+
+    Returns None whenever there is no countable signal yet — a run that has printed
+    nothing, or output this parser does not recognise. The UI renders that as *no bar*:
+    a fabricated fraction would assert a measurement nobody made (FR16), and on a
+    multi-minute LLM run a fake bar is worse than no bar."""
+    kind = _kind_of(command)
+    lines = log_text.splitlines()
+
+    if kind == "bench":
+        last = None
+        last_at = -1
+        for position, line in enumerate(lines):
+            match = _BENCH_STEP.match(line)
+            if match:
+                last, last_at = match, position
+        if last is None:
+            return None
+        index, total, test, rest = int(last[1]), int(last[2]), last[3], last[4]
+        # `[1/6] X (smoke) ...` announces a test that is STARTING; `[3/6] X TP/FN (…)`
+        # reports one that finished. Counting the start line as done would show 1/6
+        # complete the instant the run begins, before any LLM call has returned.
+        done = index
+        if rest.rstrip().endswith("..."):
+            # The smoke test is the one test whose start and finish are printed as two
+            # separate lines — the finish being `    -> strict=TP  lenient=TP  (…)`, not
+            # another `[N/M]`. Without reading that, a `--sample 2` run shows 0/2 for its
+            # entire length and then jumps to 2/2, which reads as a hung process.
+            finished = any(
+                _BENCH_SMOKE_DONE.match(line) for line in lines[last_at + 1:]
+            )
+            done = index if finished else index - 1
+        return _progress(done, total, "test file", test)
+
+    if kind not in _BATCH_UNIT:
+        return None
+    done = 0
+    current = ""
+    for line in lines:
+        if line.startswith("  -> "):
+            done += 1
+        else:
+            section = _SECTION.match(line)
+            if section:
+                current = section[1]
+    return _progress(done, _batch_total(command, kind), _BATCH_UNIT[kind], current)
+
+
+def _kind_of(command: list[str]) -> Kind:
+    """Which script this handle is running. `build_command` always puts
+    `./scripts/<kind>.py` first, so the stem is the kind."""
+    return Path(command[0]).stem  # type: ignore[return-value]
+
+
 def poll_run(handle: RunHandle) -> RunStatus:
-    """Non-blocking liveness + log-tail check for a handle from `start_run`."""
+    """Non-blocking liveness + log-tail check for a handle from `start_run`, plus the
+    FR16 progress count."""
     entry = _RUN_REGISTRY.get(handle.pid)
     if entry is None:
         return RunStatus(state="failed", log_tail="", returncode=None)
     process: subprocess.Popen = entry["process"]
     log_path: Path = entry["log_path"]
     log_tail = ""
+    progress = None
     if log_path.exists():
-        lines = log_path.read_text(encoding="utf-8", errors="replace").splitlines()
+        # Read the WHOLE log, not just the tail: sweep/ablation print the line carrying
+        # the total ("Variant sẽ chạy: …") once at the top, and it scrolls out of a
+        # 40-line tail within seconds. `log_tail` stays 40 lines regardless.
+        text = log_path.read_text(encoding="utf-8", errors="replace")
+        lines = text.splitlines()
         log_tail = "\n".join(lines[-LOG_TAIL_LINES:])
+        progress = parse_progress(text, handle.command)
     returncode = process.poll()
     if returncode is None:
         state: Literal["running", "done", "failed"] = "running"
@@ -251,7 +370,9 @@ def poll_run(handle: RunHandle) -> RunStatus:
         state = "done"
     else:
         state = "failed"
-    return RunStatus(state=state, log_tail=log_tail, returncode=returncode)
+    return RunStatus(
+        state=state, log_tail=log_tail, returncode=returncode, progress=progress
+    )
 
 
 def list_results(kind: Kind) -> list[RunSummary]:
