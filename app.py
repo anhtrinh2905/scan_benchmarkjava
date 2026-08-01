@@ -5,19 +5,17 @@ UI reorganized into a sidebar-navigated, multipage layout (Run Scan / Results /
 Knowledge Base) — all `scan_runner`/`kb_search` calls and their contracts are
 unchanged; this is a presentation-layer restructure only.
 
-C-012 adds the deploy surface: a shared-password gate and a read-only Run Scan page.
-Both are presentation only — the actual refusal to scan lives in `scan_runner`.
+C-012 added the deploy surface: a read-only Run Scan page, backed by `scan_runner`'s own
+refusal to spawn. C-013 removed the password gate that shipped alongside it — the
+deployed instance is public by decision (ADR 19); what keeps it safe is that it cannot
+act, not that it is hard to reach.
 """
-import hmac
-import os
 import shlex
 
 import streamlit as st
 
 import scan_runner
 from kb_search import search_kb
-
-PASSWORD_ENV_VAR = "APP_PASSWORD"
 
 STATUS_STATE = {"running": "running", "done": "complete", "failed": "error"}
 STATUS_LABEL = {"running": "Scan running", "done": "Scan complete", "failed": "Scan failed"}
@@ -26,52 +24,6 @@ STATUS_ICON = {
     "done": ":material/check_circle:",
     "failed": ":material/error:",
 }
-
-
-def configured_password() -> str | None:
-    """The shared secret, from Streamlit secrets first, then the environment."""
-    try:
-        secret = st.secrets[PASSWORD_ENV_VAR]
-    except Exception:
-        # st.secrets raises rather than returning a default when no secrets file
-        # exists at all, which is the normal local case.
-        secret = None
-    return (str(secret or "") or os.environ.get(PASSWORD_ENV_VAR, "")).strip() or None
-
-
-def password_accepted() -> bool:
-    """Whether the app may render anything at all.
-
-    Local runs with no password configured are ungated, exactly as before C-012. A
-    read-only (deployed) instance with no password configured refuses to serve instead
-    of serving openly, so a half-finished deploy is unreachable rather than public.
-    """
-    password = configured_password()
-    if password is None:
-        if scan_runner.runtime_mode() == "readonly":
-            st.error(
-                "This instance is not configured for public access: no access password "
-                "is set. Set APP_PASSWORD on the host and redeploy.",
-                icon=":material/lock:",
-            )
-            return False
-        return True
-
-    if st.session_state.get("password_ok"):
-        return True
-
-    st.title("Scan BenchmarkJava")
-    st.caption("Enter the access password to continue.")
-    with st.form("password_gate"):
-        attempt = st.text_input("Access password", type="password")
-        submitted = st.form_submit_button("Continue", type="primary")
-    if submitted:
-        if hmac.compare_digest(attempt.encode(), password.encode()):
-            st.session_state.password_ok = True
-            st.rerun()
-        else:
-            st.error("Incorrect password.", icon=":material/error:")
-    return False
 
 
 def render_readonly_run_notice() -> None:
@@ -287,11 +239,6 @@ def page_knowledge_base() -> None:
 
 
 st.set_page_config(page_title="Scan BenchmarkJava", page_icon=":material/security:", layout="wide")
-
-# Nothing below runs until the gate passes, so no page, sidebar entry, scorecard or KB
-# text can reach an unauthenticated response.
-if not password_accepted():
-    st.stop()
 
 is_readonly = scan_runner.runtime_mode() == "readonly"
 

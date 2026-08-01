@@ -31,9 +31,12 @@ __pycache__/
 .claude
 
 # /flow run-state (generated; safe to ignore)
+# Anchored at repo root, same reason as BenchmarkJava/ above: a bare `docs/` also
+# matched `kb/docs/`, hiding all 23 knowledge-base documents from git — and therefore
+# from `railway up`, which uploads by gitignore rules.
 MODE
 PROJECT_TYPE
-.flow/
-flow/
-cards/
-docs/
+/.flow/
+/flow/
+/cards/
+/docs/

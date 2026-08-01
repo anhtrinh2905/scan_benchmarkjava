@@ -122,14 +122,16 @@ quả ngay trên UI sẽ lần lượt lên ở các card tiếp theo.
 
 ## Deploy (Railway, chế độ read-only)
 
-Bản deploy dùng chung **không chạy được scan** và **không giữ `OPENCODE_API_KEY`** — nó chỉ
-phục vụ Results + Knowledge Base từ dữ liệu đã bake sẵn trong image. Muốn quét thật thì chạy
-local như phần trên.
+Bản deploy dùng chung **công khai, không cần đăng nhập** — và **không chạy được scan**,
+**không giữ `OPENCODE_API_KEY`**. Nó chỉ phục vụ Results + Knowledge Base từ dữ liệu đã bake
+sẵn trong image. Cái giữ an toàn là instance không làm được gì, chứ không phải khó truy cập.
+Muốn quét thật thì chạy local như phần trên.
+
+Đang chạy tại: https://scan-benchmarkjava-production.up.railway.app
 
 | Biến môi trường | Đặt ở đâu | Ý nghĩa |
 | --- | --- | --- |
 | `SCAN_UI_READONLY` | Dockerfile đặt sẵn `=1` | `1`/`true`/`yes` → chặn scan ở tầng `scan_runner`, không chỉ ẩn nút. Giá trị khác (kể cả gõ sai) → chế độ local |
-| `APP_PASSWORD` | Railway Variables | Mật khẩu dùng chung để mở trang. Ở chế độ read-only mà thiếu biến này, app từ chối phục vụ thay vì mở công khai |
 | `PORT` | Railway tự đặt | Cổng Streamlit lắng nghe |
 
 Các bước:
@@ -137,14 +139,14 @@ Các bước:
 1. Push repo lên GitHub.
 2. Railway → **New Project** → **Deploy from GitHub repo** → chọn repo này. `railway.toml`
    khai báo sẵn builder `dockerfile` và healthcheck `/_stcore/health`.
-3. **Variables** → thêm `APP_PASSWORD`. Không thêm `OPENCODE_API_KEY`.
+3. **Variables** → không cần thêm gì. Đặc biệt không thêm `OPENCODE_API_KEY`.
 4. **Settings → Networking** → Generate Domain.
 
 Chạy thử image y hệt bản deploy ở máy local:
 
 ```bash
 docker build -t scan-benchmarkjava .
-docker run --rm -p 8501:8501 -e APP_PASSWORD=demo scan-benchmarkjava
+docker run --rm -p 8501:8501 scan-benchmarkjava
 ```
 
 Bỏ `-e SCAN_UI_READONLY` về `0` nếu muốn container chạy đầy đủ — nhưng khi đó phải tự mount

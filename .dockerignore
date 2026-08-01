@@ -17,13 +17,14 @@ __pycache__/
 *.pyc
 
 # Flow planning trail — local-only, not part of the running app.
-flow/
-cards/
-docs/
-.flow/
-.claude/
-MODE
-PROJECT_TYPE
+# Root-anchored so these never match kb/docs/ or any nested directory of the same name.
+/flow/
+/cards/
+/docs/
+/.flow/
+/.claude/
+/MODE
+/PROJECT_TYPE
 
 # Bulk scan output the Results page never reads (per-test SARIF, run logs).
 results/**/*.sarif
