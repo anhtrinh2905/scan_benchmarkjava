@@ -52,7 +52,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import bench as bm  # noqa: E402  (tái dùng động cơ đã kiểm chứng của bench.py)
 
-OUT_DIR = bm.ROOT / "results" / "ablation"
+OUT_DIR = bm.ROOT / "data" / "results" / "ablation"
 DEFAULT_SAMPLE_SIZE = 100
 
 # Ruleset Semgrep cho arm `static`. Đổi giá trị này là chữ ký cache của arm
@@ -61,7 +61,7 @@ DEFAULT_SAMPLE_SIZE = 100
 SEMGREP_RULESETS: list[str] = [
     "p/java",
     "p/owasp-top-ten",
-    str(bm.ROOT / "rules" / "benchmarkjava"),
+    str(bm.ROOT / "data" / "rules" / "benchmarkjava"),
 ]
 
 # Semgrep phải tải rule từ registry qua mạng -> hỏng nhất thời là chuyện thường.

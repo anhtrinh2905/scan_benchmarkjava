@@ -46,7 +46,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import bench as bm  # noqa: E402  (tái dùng động cơ đã kiểm chứng của bench.py)
 
-OUT_DIR = bm.ROOT / "results" / "sweep"
+OUT_DIR = bm.ROOT / "data" / "results" / "sweep"
 DEFAULT_SAMPLE_SIZE = 100
 
 # --------------------------------------------------------------------------

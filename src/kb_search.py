@@ -1,10 +1,10 @@
 """Knowledge-base search (flow/05-contract.md v1.1 increment).
 
-Keyword search (TF-IDF/cosine over `kb/docs/*.md`) and semantic search
+Keyword search (TF-IDF/cosine over `data/kb/docs/*.md`) and semantic search
 (cached OPENCODE embeddings, falling back to TF-IDF+LSA per ADR decision 12
 when the `/embeddings` route is unavailable) — same library-style seam as
 `scan_runner.py`/`alert_normalizer.py`: read-only except `embed_kb_docs`
-(writes `kb/.embeddings_cache.json`), no `st.*`.
+(writes `data/kb/.embeddings_cache.json`), no `st.*`.
 """
 from __future__ import annotations
 
@@ -22,8 +22,8 @@ from sklearn.decomposition import TruncatedSVD
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
-ROOT = Path(__file__).resolve().parent
-KB_DIR = ROOT / "kb"
+ROOT = Path(__file__).resolve().parent.parent
+KB_DIR = ROOT / "data" / "kb"
 KB_DOCS_DIR = KB_DIR / "docs"
 KB_EMBED_CACHE = KB_DIR / ".embeddings_cache.json"
 

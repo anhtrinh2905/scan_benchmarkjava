@@ -4,6 +4,18 @@ Chạy Metis trên [OWASP BenchmarkJava](https://github.com/OWASP-Benchmark/Benc
 
 Phạm vi mặc định: **100 test đầu** (`BenchmarkTest00001` …) — 75 TP / 25 FP.
 
+## Cấu trúc thư mục
+
+| Thư mục | Vai trò |
+| --- | --- |
+| `src/` | Ứng dụng Streamlit (`app.py`, `scan_runner.py`, `kb_search.py`, `alert_normalizer.py`) |
+| `scripts/` | Công cụ dòng lệnh cho dev (`bench.py`, `sweep.py`, `ablation.py`) — không phải app |
+| `data/` | Dữ liệu máy đọc: `data/kb/` (kho tri thức), `data/rules/` (rule Semgrep), `data/results/` (kết quả quét thô + scorecard) |
+| `tests/` | Kiểm thử tự động — hiện có `tests/e2e/` (smoke test Playwright trên bản deploy) |
+| `reports/` | Báo cáo tuần đã nộp (`week-1.md`, `week-2.md`, …) — cố định, không sửa lại sau khi nộp |
+| `docs/`, `cards/`, `flow/`, `MODE`, `RETRO.md` | Nhật ký **quá trình** làm việc (thiết kế UI, quyết định, done-evidence) — không nằm trong git/image deploy, xem `.gitignore`/`.dockerignore` |
+| `BenchmarkJava/`, `metis/` | Clone ngoài (external), không thuộc repo này — xem mục Yêu cầu bên dưới |
+
 ## Yêu cầu
 
 | Thành phần | Ghi chú |
@@ -66,7 +78,7 @@ Smoke rẻ trước khi full:
 ./scripts/bench.py --force                        # bỏ cache, chạy lại
 ```
 
-Kết quả: `results/<tag>/` (mặc định `results/baseline/`) — `bench_summary.json`, scorecard markdown, SARIF từng test.
+Kết quả: `data/results/<tag>/` (mặc định `data/results/baseline/`) — `bench_summary.json`, scorecard markdown, SARIF từng test.
 
 Cờ hay dùng: `--parallel`, `--only SUB`, `--no-triage`, `--max-workers`, `--max-rounds`.
 
@@ -81,7 +93,7 @@ Cờ hay dùng: `--parallel`, `--only SUB`, `--no-triage`, `--max-workers`, `--m
 ./scripts/sweep.py --force
 ```
 
-Kết quả: `results/sweep/<variant>/` + `results/sweep/compare.{md,csv,json}`.
+Kết quả: `data/results/sweep/<variant>/` + `data/results/sweep/compare.{md,csv,json}`.
 
 ### 3. Ablation — `scripts/ablation.py`
 
@@ -99,13 +111,13 @@ Kết quả: `results/sweep/<variant>/` + `results/sweep/compare.{md,csv,json}`.
 ./scripts/ablation.py --force
 ```
 
-Kết quả: `results/ablation/<arm>/` + `results/ablation/compare.{md,csv,json}` (Pareto / Youden per 1M token).
+Kết quả: `data/results/ablation/<arm>/` + `data/results/ablation/compare.{md,csv,json}` (Pareto / Youden per 1M token).
 
 ## Ghi chú
 
 - Lần chạy sau với cùng tham số sẽ dùng **cache** (`[cache]`) — thêm `--force` để chạy lại.
 - `--rescore` chỉ đọc SARIF đã có, không gọi Metis/Semgrep.
-- Báo cáo phân tích kết quả: xem `2026-07-29_TrinhThiLanAnh_Week1.md`.
+- Báo cáo phân tích kết quả: xem `reports/week-1.md`, `reports/week-2.md`.
 
 ## Giao diện Streamlit (đang xây dựng)
 
@@ -114,7 +126,7 @@ CLI ở trên vẫn chạy y nguyên qua `uv run --script`, không phụ thuộc
 
 ```bash
 uv sync
-uv run streamlit run app.py   # mở http://localhost:8501
+uv run streamlit run src/app.py   # mở http://localhost:8501
 ```
 
 Hiện tại mới có trang khung (scaffold) — chọn scan/variant/sample, chạy nền, và xem kết
@@ -151,3 +163,24 @@ docker run --rm -p 8501:8501 scan-benchmarkjava
 
 Bỏ `-e SCAN_UI_READONLY` về `0` nếu muốn container chạy đầy đủ — nhưng khi đó phải tự mount
 `metis/` + `BenchmarkJava/` và cấp API key, vì image không chứa chúng.
+
+## Hạn chế đã biết
+
+Rủi ro/nợ kỹ thuật đã cân nhắc và chấp nhận có chủ đích, không phải bị bỏ sót:
+
+- **Bản deploy công khai, không có access control.** Cổng mật khẩu đã bị gỡ khỏi code
+  (không chỉ tắt) sau khi cân nhắc: nội dung public chỉ là scorecard (model, thời gian,
+  token, precision/recall) và tài liệu OWASP công khai — không có chuỗi dạng
+  credential. Cái giữ an toàn là instance không chạy được scan và không giữ
+  `OPENCODE_API_KEY`, không phải việc khó truy cập. Muốn khoá lại phải thêm code lại từ
+  đầu, vì cơ chế đã bị xoá chứ không phải tắt.
+- **Một lần quét lỗi ngay từ đầu (model từ chối request) trông y hệt một lần quét sạch
+  trong mọi kết quả hiển thị.** Từng xảy ra khi model quét trả lỗi 403 và Metis vẫn thoát
+  mã 0 với `reviews: []`, khiến `sweep.py` ghi nhận nhầm 3 variant là "chạy hợp lệ, 0%
+  recall". Chỉ phát hiện được bằng cách so token count thủ công giữa các run. Đã khắc phục
+  tạm bằng cách đổi model quét; **chưa khắc phục tận gốc** — hệ thống vẫn không tự cảnh báo
+  khi `usage.total_tokens == 0` mà `len(per_test) > 0`.
+- **Thanh tiến trình (progress bar) đứng yên khi quét ít hơn 3 file** vì một dòng `print`
+  ở `bench.py` thiếu `flush=True`, nên log không tới nơi cho tới khi tiến trình kết thúc.
+  Cách sửa chỉ là thêm một keyword argument, nhưng chưa áp dụng vì nằm ngoài phạm vi các
+  card đã khoá file `scripts/*.py`.

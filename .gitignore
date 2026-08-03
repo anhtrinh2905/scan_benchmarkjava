@@ -1,26 +1,27 @@
-# Anchor at repo root — bare `BenchmarkJava/` also matches `rules/benchmarkjava/`
+# Anchor at repo root — bare `BenchmarkJava/` also matches `data/rules/benchmarkjava/`
 # on case-insensitive filesystems (macOS default).
 /BenchmarkJava/
 metis/
 
-# results/ is ignored in bulk (~15MB of per-test SARIF and run logs), EXCEPT the 26
+# data/results/ is ignored in bulk (~15MB of per-test SARIF and run logs), EXCEPT the 26
 # small files the Results page actually reads — those are tracked so the deployed
 # read-only image has real content to show (flow/04-adr.md decision 17).
-# `results/**` + `!results/**/` is the required idiom: git will not descend into an
-# excluded directory, so the directories must be re-included before their files can be.
-results/**
-!results/**/
-!results/**/scorecard.md
-!results/**/bench_summary.json
-!results/**/runmeta.json
-!results/**/compare.md
-!results/**/compare.csv
-!results/**/compare.json
+# `data/results/**` + `!data/results/**/` is the required idiom: git will not descend
+# into an excluded directory, so the directories must be re-included before their files
+# can be.
+data/results/**
+!data/results/**/
+!data/results/**/scorecard.md
+!data/results/**/bench_summary.json
+!data/results/**/runmeta.json
+!data/results/**/compare.md
+!data/results/**/compare.csv
+!data/results/**/compare.json
 # ADR 20 — the Matrix page (FR14) needs per-test ground truth from every run. bench runs
 # carry it in bench_summary.json (above); sweep variants and ablation arms carry it ONLY
 # in detail.json. Untracked means absent from the Railway build context, which would make
 # the deployed Matrix show 6 columns instead of 15 with no visible signal. 612 KB, 9 files.
-!results/**/detail.json
+!data/results/**/detail.json
 .vscode/
 .idea/
 .DS_Store
@@ -33,15 +34,16 @@ results/**
 __pycache__/
 # Added by ggshield
 .cache_ggshield
-.claude
 
 # /flow run-state (generated; safe to ignore)
 # Anchored at repo root, same reason as BenchmarkJava/ above: a bare `docs/` also
-# matched `kb/docs/`, hiding all 23 knowledge-base documents from git — and therefore
-# from `railway up`, which uploads by gitignore rules.
+# matched `data/kb/docs/`, hiding all 23 knowledge-base documents from git — and
+# therefore from `railway up`, which uploads by gitignore rules.
 MODE
 PROJECT_TYPE
 /.flow/
 /flow/
 /cards/
 /docs/
+RETRO.md
+.claude/skills

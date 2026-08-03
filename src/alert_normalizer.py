@@ -2,7 +2,7 @@
 
 Maps semgrep SARIF and Metis bench_summary.json into the flat `Alert` schema and
 appends them to the knowledge-base JSONL. Read-only except `append_alerts`
-(writes `kb/alerts.jsonl`) — no `st.*`; any future UI card consumes FROM here.
+(writes `data/kb/alerts.jsonl`) — no `st.*`; any future UI card consumes FROM here.
 """
 from __future__ import annotations
 
@@ -12,8 +12,8 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Literal
 
-ROOT = Path(__file__).resolve().parent
-KB_DIR = ROOT / "kb"
+ROOT = Path(__file__).resolve().parent.parent
+KB_DIR = ROOT / "data" / "kb"
 KB_ALERTS_PATH = KB_DIR / "alerts.jsonl"
 
 SEVERITIES = {"critical", "high", "medium", "low", "info"}

@@ -19,10 +19,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Literal
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS_DIR = ROOT / "scripts"
-RESULTS_ROOT = ROOT / "results"
-RULES_DIR = ROOT / "rules" / "benchmarkjava"
+RESULTS_ROOT = ROOT / "data" / "results"
+RULES_DIR = ROOT / "data" / "rules" / "benchmarkjava"
 
 SMOKE_SAMPLE_THRESHOLD = 10
 LOG_TAIL_LINES = 40

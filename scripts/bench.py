@@ -41,13 +41,13 @@ from pathlib import Path
 # Đường dẫn
 # --------------------------------------------------------------------------
 
-# Repo root = parent of scripts/ (metis/, BenchmarkJava/, results/, .env sống ở đây).
+# Repo root = parent of scripts/ (metis/, BenchmarkJava/, data/, .env sống ở đây).
 ROOT = Path(__file__).resolve().parent.parent
 METIS_DIR = ROOT / "metis"
 BENCH_DIR = ROOT / "BenchmarkJava"
 TESTCODE_DIR = BENCH_DIR / "src" / "main" / "java" / "org" / "owasp" / "benchmark" / "testcode"
 EXPECTED_CSV = BENCH_DIR / "expectedresults-1.2.csv"
-RESULTS_ROOT = ROOT / "results"
+RESULTS_ROOT = ROOT / "data" / "results"
 ENV_FILE = ROOT / ".env"
 
 # --------------------------------------------------------------------------
