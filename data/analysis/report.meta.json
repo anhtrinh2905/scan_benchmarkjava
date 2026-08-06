@@ -1,0 +1,26 @@
+{
+  "accounted_for": true,
+  "alerts_read": 111,
+  "alerts_skipped": 0,
+  "alerts_valid": 111,
+  "dropped_kb_ids": 0,
+  "duration_seconds": 3530.225,
+  "exact_duplicates_removed": 2,
+  "findings": 93,
+  "generated_at": "2026-08-06T05:21:14.629592+00:00",
+  "groups": 93,
+  "input_source": "data/kb/alerts.jsonl",
+  "limit_applied": null,
+  "llm_calls": 95,
+  "llm_failure_reasons": {
+    "transport_error": 3
+  },
+  "llm_failures": 3,
+  "model": "deepseek-v4-pro",
+  "prompt_path": "src/prompts/security_analyst.md",
+  "prompt_sha256": "8b8356c3ff1b11cb6816b4c630bc2555c133ed568841cdd52fc23b4c0561a1b9",
+  "prompt_version": "1.0.0",
+  "skipped": [],
+  "status": "ok",
+  "total_tokens": 482344
+}

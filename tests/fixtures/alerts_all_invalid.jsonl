@@ -1,0 +1,3 @@
+not json at all
+{"tool": "semgrep", "severity": "medium"
+["bare", "array"]

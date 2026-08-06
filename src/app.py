@@ -13,13 +13,21 @@ act, not that it is hard to reach.
 C-014 (v1.5) added the Matrix page — one cross-run table, 100 test files by 15 runs
 (FR14) — and rebuilt Results as a metrics-first grid (FR15). Both read only through the
 `scan_runner` seam: this file opens no file under `results/` and parses no run JSON.
+
+C-019 (v1.7) added the Security Report page (FR22). Same rule again: its only data source
+is `security_agent.load_report()`. This file never opens the generated report, never parses
+it, and never calls the analysis endpoint — the deployed instance holds no key and renders a
+report baked into the image at build time.
 """
+import json
 import shlex
+from dataclasses import asdict
 
 import pandas as pd
 import streamlit as st
 
 import scan_runner
+import security_agent
 from kb_search import search_kb
 
 STATUS_STATE = {"running": "running", "done": "complete", "failed": "error"}
@@ -80,6 +88,18 @@ OUTCOME_MEANING = {
     "FN": "missed a real vulnerability",
     "FP": "false alarm on a safe file",
 }
+
+# The severity scale, declared once in DESIGN.md (2026-08-06). Same law as the outcome
+# scale above: colour is reinforcement, so every badge also prints its literal word.
+SEVERITY_STYLE = {
+    "critical": ("#FEF2F2", "#991B1B"),
+    "high": ("#FFF7ED", "#9A3412"),
+    "medium": ("#FEFCE8", "#854D0E"),
+    "low": ("#F0F9FF", "#075985"),
+    "info": ("#F4F4F5", "#52525B"),
+}
+SEVERITY_ORDER = ["critical", "high", "medium", "low", "info"]
+CONFIDENCE_ORDER = ["high", "medium", "low"]
 
 
 def render_readonly_run_notice() -> None:
@@ -762,6 +782,237 @@ def page_knowledge_base() -> None:
         render_kb_category(hits, "rules")
 
 
+# --------------------------------------------------------------------------
+# Security Report (C-019, FR22)
+# --------------------------------------------------------------------------
+
+
+def severity_badge(severity: str) -> str:
+    """A tinted chip that always carries its literal word. The tint is reinforcement; the
+    word is the information (DESIGN.md severity scale, WCAG `color-not-only`)."""
+    background, foreground = SEVERITY_STYLE.get(severity, SEVERITY_STYLE["info"])
+    return (
+        f'<span style="background-color:{background};color:{foreground};font-weight:600;'
+        f'padding:1px 8px;border-radius:4px;font-size:0.85em">{severity}</span>'
+    )
+
+
+def filter_findings(findings: list, severities: list, confidences: list, query: str) -> list:
+    """Pure. Takes the loaded findings and the three controls, returns what to show —
+    no session state, no I/O, so the visible count is always a function of the filters."""
+    text = query.strip().lower()
+    kept = []
+    for finding in findings:
+        if severities and finding.severity not in severities:
+            continue
+        if confidences and finding.confidence not in confidences:
+            continue
+        if text:
+            haystack = " ".join(
+                [finding.title, finding.cwe or ""]
+                + [location.file for location in finding.locations]
+            ).lower()
+            if text not in haystack:
+                continue
+        kept.append(finding)
+    return kept
+
+
+def findings_as_jsonl(findings: list) -> str:
+    """The same one-object-per-line shape `write_report()` produces, rebuilt from the
+    findings already in hand. The page does not read the generated file to serve it."""
+    return "".join(
+        json.dumps(asdict(finding), ensure_ascii=False, sort_keys=True) + "\n"
+        for finding in findings
+    )
+
+
+def render_report_status_banner(meta) -> None:
+    """A run that degraded must not look clean on screen either — the same honesty the
+    sidecar carries, at the top of the page rather than buried in a download."""
+    if meta.status == "ok":
+        return
+    if meta.status == "degraded":
+        reasons = ", ".join(f"{k}: {v}" for k, v in meta.llm_failure_reasons.items())
+        st.error(
+            f"Báo cáo này ở trạng thái **degraded** — mọi nhóm đều phải rơi về phân tích "
+            f"dự phòng, không có phân tích nào từ mô hình. Lý do: {reasons or 'không rõ'}.",
+            icon=":material/error:",
+        )
+    elif meta.status == "invalid_input":
+        st.error(
+            f"Đầu vào hỏng hoàn toàn: {meta.alerts_skipped}/{meta.alerts_read} dòng bị bỏ "
+            "qua, không có phát hiện nào được ghi.",
+            icon=":material/error:",
+        )
+    elif meta.status == "empty":
+        st.warning(
+            "Đầu vào rỗng — đây KHÔNG có nghĩa là không tìm thấy lỗ hổng nào.",
+            icon=":material/warning:",
+        )
+
+
+def render_report_kpis(report) -> None:
+    meta = report.meta
+    by_severity = {level: 0 for level in SEVERITY_ORDER}
+    fallback_count = 0
+    for finding in report.findings:
+        by_severity[finding.severity] = by_severity.get(finding.severity, 0) + 1
+        if finding.analysis_source == "fallback":
+            fallback_count += 1
+
+    headline = st.columns(3)
+    headline[0].metric("Phát hiện", _count(len(report.findings)), border=True)
+    headline[1].metric(
+        "Từ cảnh báo", f"{meta.alerts_read} → {len(report.findings)}",
+        help="Số dòng cảnh báo đọc vào, gộp thành số phát hiện.", border=True,
+    )
+    headline[2].metric(
+        "Không có phân tích mô hình", _count(fallback_count),
+        help="Phát hiện chỉ có nội dung dự phòng (fallback), mô hình không đóng góp gì.",
+        border=True,
+    )
+
+    severity_row = st.columns(len(SEVERITY_ORDER))
+    for column, level in zip(severity_row, SEVERITY_ORDER):
+        column.metric(level, _count(by_severity[level]), border=True)
+
+
+def render_finding_body(finding) -> None:
+    if finding.analysis_source == "fallback":
+        st.warning(
+            "Không có phân tích từ mô hình cho nhóm này — nội dung dưới đây được dựng "
+            "từ chính cảnh báo của công cụ quét và tài liệu KB.",
+            icon=":material/info:",
+        )
+
+    st.markdown("**Vị trí**")
+    locations = finding.locations
+    if len(locations) > 5:
+        st.caption(f"{len(locations)} vị trí")
+        with st.expander(f"Xem đủ {len(locations)} vị trí"):
+            for location in locations:
+                st.markdown(f"- `{location.file}`" + (f" : {location.line}" if location.line else ""))
+    else:
+        for location in locations:
+            st.markdown(f"- `{location.file}`" + (f" : {location.line}" if location.line else ""))
+
+    st.markdown("**Bằng chứng từ công cụ quét**")
+    st.caption(
+        f"công cụ `{finding.evidence.tool}` · {finding.evidence.occurrence_count} lần xuất hiện "
+        f"trên {finding.evidence.files_affected} tệp"
+        + (f" · rule `{finding.evidence.rule_id}`" if finding.evidence.rule_id else "")
+    )
+    st.code(finding.evidence.raw_message, language=None)
+
+    st.markdown("**Giải thích**")
+    st.markdown(finding.explanation)
+
+    st.markdown("**Cách kiểm tra**")
+    st.markdown(finding.remediation.how_to_verify)
+
+    st.markdown("**Cách khắc phục**")
+    st.markdown(finding.remediation.how_to_fix)
+    if finding.remediation.code_hint:
+        st.code(finding.remediation.code_hint, language="java")
+
+    st.markdown("**Tài liệu KB**")
+    if finding.kb_refs:
+        for doc_id in finding.kb_refs:
+            st.markdown(f"- `{doc_id}`")
+        st.caption("Tra cứu toàn văn ở trang Knowledge Base.")
+    else:
+        st.caption("Không có tài liệu KB nào khớp — độ tin cậy đã bị hạ tương ứng.")
+
+    st.markdown("**Mức độ tin cậy**")
+    st.markdown(f"`{finding.confidence}` — {finding.confidence_reason}")
+
+
+def page_security_report() -> None:
+    st.title("Security Report")
+    st.caption(
+        "Cảnh báo từ các lần quét, gộp nhóm và giải thích bằng tiếng Việt. "
+        "Trang này chỉ đọc một báo cáo đã được sinh sẵn."
+    )
+
+    try:
+        report = security_agent.load_report()
+    except security_agent.ReportCorruptError as exc:
+        st.error(f"Báo cáo hỏng, không đọc được: {exc}", icon=":material/error:")
+        return
+
+    if report is None:
+        st.info("Chưa có báo cáo nào được sinh trên bản cài này.", icon=":material/info:")
+        with st.container(border=True):
+            st.markdown("Sinh báo cáo bằng lệnh sau trong một bản checkout có khoá API:")
+            st.code("./scripts/analyze.py", language="bash")
+            st.caption(
+                "Bản triển khai công khai không giữ khoá mô hình nên không thể tự sinh "
+                "báo cáo, đúng như nó không thể tự chạy quét."
+            )
+        return
+
+    meta = report.meta
+    render_report_status_banner(meta)
+    render_report_kpis(report)
+
+    with st.container(border=True):
+        filter_columns = st.columns([1, 1, 2])
+        with filter_columns[0]:
+            severities = st.multiselect("Mức độ", SEVERITY_ORDER, key="report_severities")
+        with filter_columns[1]:
+            confidences = st.multiselect("Tin cậy", CONFIDENCE_ORDER, key="report_confidences")
+        with filter_columns[2]:
+            query = st.text_input(
+                "Tìm theo tiêu đề, CWE hoặc tên tệp",
+                placeholder="ví dụ: SQL, CWE-330, BenchmarkTest00024.java",
+                key="report_query",
+            )
+
+    visible = filter_findings(report.findings, severities, confidences, query)
+    st.markdown(f"Đang hiện **{len(visible)}** trên tổng số **{len(report.findings)}** phát hiện.")
+
+    if not visible:
+        st.info("Không có phát hiện nào khớp bộ lọc hiện tại.", icon=":material/filter_alt:")
+    for finding in visible:
+        header = (
+            f"{finding.title} · {finding.severity} · "
+            f"{finding.evidence.occurrence_count} lần xuất hiện"
+        )
+        with st.expander(header):
+            badge = severity_badge(finding.severity)
+            if finding.severity_clamped:
+                badge += (
+                    f' &nbsp;<span style="font-size:0.85em">công cụ báo '
+                    f"<code>{finding.severity_source}</code>, báo cáo hạ/nâng thành "
+                    f"<code>{finding.severity}</code></span>"
+                )
+            else:
+                badge += (
+                    f' &nbsp;<span style="font-size:0.85em">công cụ cũng báo '
+                    f"<code>{finding.severity_source}</code></span>"
+                )
+            st.markdown(badge, unsafe_allow_html=True)
+            if finding.severity_rationale:
+                st.caption(finding.severity_rationale)
+            st.markdown(f"`{finding.cwe or 'CWE không xác định'}` · `{finding.finding_id}`")
+            render_finding_body(finding)
+
+    st.divider()
+    st.download_button(
+        "Tải báo cáo JSONL",
+        data=findings_as_jsonl(report.findings).encode("utf-8"),
+        file_name=security_agent.REPORT_FILENAME,
+        mime="application/x-ndjson",
+        icon=":material/download:",
+    )
+    st.caption(
+        f"Sinh lúc {meta.generated_at} · nguồn `{meta.input_source}` · "
+        f"mô hình `{meta.model or 'không dùng mô hình'}` · "
+        f"prompt `{meta.prompt_version}` sha256 `{(meta.prompt_sha256 or '—')[:12]}`"
+    )
+
+
 st.set_page_config(page_title="Scan BenchmarkJava", page_icon=":material/security:", layout="wide")
 st.html(PAGE_CSS)
 
@@ -785,6 +1036,8 @@ pages = [
     run_page,
     results_page,
     st.Page(page_matrix, title="Matrix", icon=":material/grid_on:", url_path="matrix"),
+    st.Page(page_security_report, title="Security Report", icon=":material/shield:",
+            url_path="security-report"),
     st.Page(page_knowledge_base, title="Knowledge Base", icon=":material/search:", url_path="knowledge-base"),
 ]
 current_page = st.navigation(pages)
