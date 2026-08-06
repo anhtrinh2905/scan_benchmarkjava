@@ -14,7 +14,7 @@ Phạm vi mặc định: **100 test đầu** (`BenchmarkTest00001` …) — 75 T
 
 | Thành phần                         | Ghi chú                                                                                                                 |
 | ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `[uv](https://docs.astral.sh/uv/)` | Bắt buộc — script và app chạy qua `uv run`                                                                              |
+| [`uv`](https://docs.astral.sh/uv/) | Bắt buộc — script và app chạy qua `uv run`                                                                              |
 | `metis/`                           | Clone [arm/metis](https://github.com/arm/metis) ở thư mục gốc repo (không thuộc repo này)                               |
 | `BenchmarkJava/`                   | Clone [OWASP BenchmarkJava](https://github.com/OWASP-Benchmark/BenchmarkJava) ở thư mục gốc repo (không thuộc repo này) |
 | `semgrep`                          | Chỉ cần cho `scripts/ablation.py` (arm `static`)                                                                        |
@@ -69,7 +69,10 @@ Chỉ liệt kê phần đã commit lên GitHub (`git ls-files`); `metis/` và `
 
 | Thư mục / File               | Vai trò                                                                                                                                  |
 | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/`                       | Ứng dụng Streamlit: `app.py`, `scan_runner.py`, `kb_search.py`, `alert_normalizer.py`                                                    |
+| `src/app.py`                 | Ứng dụng Streamlit chính — điều khiển scan, xem Results/Matrix/Knowledge Base                                                           |
+| `src/scan_runner.py`         | Seam gọi Metis (chạy scan nền, đọc SARIF/summary) — `app.py` chỉ đọc qua đây, không tự parse file kết quả                               |
+| `src/kb_search.py`           | Search Knowledge Base: keyword (TF-IDF/cosine) + semantic (embedding OPENCODE, fallback TF-IDF+LSA)                                     |
+| `src/alert_normalizer.py`    | **Chuẩn hóa alert** — gộp SARIF (semgrep) và `bench_summary.json` (Metis) về một schema `Alert` phẳng, xem chi tiết [bên dưới](#chuẩn-hóa-alert-alert_normalizerpy) |
 | `scripts/`                   | Công cụ dòng lệnh cho dev: `bench.py`, `sweep.py`, `ablation.py` — không phải app                                                        |
 | `data/kb/`                   | Kho tri thức (Knowledge Base): docs OWASP Top 10, ví dụ lỗ hổng, rule Semgrep tham khảo                                                  |
 | `data/rules/`                | Rule Semgrep tùy biến cho BenchmarkJava (dùng ở arm `static` của ablation)                                                               |
@@ -83,6 +86,42 @@ Chỉ liệt kê phần đã commit lên GitHub (`git ls-files`); `metis/` và `
 
 
 
+
+### Chuẩn hóa alert (`alert_normalizer.py`)
+
+`src/alert_normalizer.py` là module thư viện độc lập (không có `st.*`, không tự chạy) —
+đưa kết quả từ 2 nguồn khác định dạng về **một schema `Alert` phẳng** để Knowledge Base
+đọc chung, không phải viết riêng logic parse cho từng tool:
+
+| Hàm | Input | Chuẩn hóa từ |
+| --- | --- | --- |
+| `normalize_sarif(sarif_path, tool)` | file SARIF (`.sarif`/`.json`) | Semgrep — đọc `runs[].results[]`, suy `severity` từ SARIF `level` (mặc định `medium` nếu rule không set), tách `CWE-\d+` từ message |
+| `normalize_bench_summary(summary_path)` | `bench_summary.json` | Metis — đọc `findings{test_name: [...]}`, map thẳng `severity`/`cwe_raw`/`line` do Metis đã trả có cấu trúc |
+| `append_alerts(alerts, out_path=...)` | `list[Alert]` | Ghi nối (append) JSONL — hàm **duy nhất có side effect**, mặc định ghi vào `data/kb/alerts.jsonl` |
+
+Schema `Alert` (dataclass): `tool` (`semgrep`/`metis`), `severity` (`critical`/`high`/`medium`/`low`/`info`), `file_or_url`, `title`, `description`, `rule_id`, `cwe`, `line`, `source_path`.
+
+Hiện tại chưa có script/CLI nào gọi module này — đây là seam chuẩn bị cho card Knowledge
+Base sắp tới (đọc `data/kb/alerts.jsonl` để hiển thị alert đã chuẩn hóa cạnh doc OWASP).
+Muốn chạy thử chuẩn hóa thủ công:
+
+```bash
+cd src   # alert_normalizer.py import flat (như scan_runner.py/kb_search.py), cần chạy từ src/
+```
+
+```python
+from pathlib import Path
+from alert_normalizer import normalize_sarif, normalize_bench_summary, append_alerts
+
+# đường dẫn tính từ repo root (ROOT trong alert_normalizer.py = parent.parent của src/)
+alerts = normalize_sarif(Path("../data/results/ablation/static/semgrep.normalized.sarif"), tool="semgrep")
+alerts += normalize_bench_summary(Path("../data/results/baseline/bench_summary.json"))
+append_alerts(alerts)   # ghi nối vào data/kb/alerts.jsonl
+```
+
+Cả hai file input ở ví dụ trên là kết quả cục bộ sau khi chạy `scripts/ablation.py`/`scripts/bench.py`
+(`semgrep.normalized.sarif` không nằm trong danh sách tracked của `data/results/`, xem
+`.gitignore`) — chạy script tương ứng trước nếu máy bạn chưa có file này.
 
 ## Ba lần chạy chính
 
