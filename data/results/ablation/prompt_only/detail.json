@@ -10,38 +10,38 @@
   "semgrep_rulesets": [
     "p/java",
     "p/owasp-top-ten",
-    "/Users/trinhthilananh/Desktop/Personal/vinsoc/week2/scan_benchmarkjava/rules/benchmarkjava"
+    "/Users/trinhthilananh/Desktop/Personal/vinsoc/week2/scan_benchmarkjava/data/rules/benchmarkjava"
   ],
-  "wall_clock_seconds": 87.0,
+  "wall_clock_seconds": 101.17,
   "semgrep_seconds": null,
   "semgrep_stats": null,
   "usage": {
-    "input_tokens": 58734,
-    "output_tokens": 39319,
-    "total_tokens": 98053,
-    "duration_seconds": 84.8
+    "input_tokens": 22958,
+    "output_tokens": 13909,
+    "total_tokens": 36867,
+    "duration_seconds": 98.34
   },
   "triage_precision": null,
   "ground_truth": {
     "strict": {
-      "TP": 14,
-      "FP": 1,
-      "FN": 1,
-      "TN": 2,
-      "precision": 0.9333333333333333,
-      "recall": 0.9333333333333333,
-      "fpr": 0.3333333333333333,
-      "youden": 0.6000000000000001
+      "TP": 5,
+      "FP": 0,
+      "FN": 2,
+      "TN": 0,
+      "precision": 1.0,
+      "recall": 0.7142857142857143,
+      "fpr": null,
+      "youden": null
     },
     "lenient": {
-      "TP": 14,
-      "FP": 1,
-      "FN": 1,
-      "TN": 2,
-      "precision": 0.9333333333333333,
-      "recall": 0.9333333333333333,
-      "fpr": 0.3333333333333333,
-      "youden": 0.6000000000000001
+      "TP": 5,
+      "FP": 0,
+      "FN": 2,
+      "TN": 0,
+      "precision": 1.0,
+      "recall": 0.7142857142857143,
+      "fpr": null,
+      "youden": null
     },
     "per_test": {
       "BenchmarkTest00001": {
@@ -51,8 +51,8 @@
         "outcome_strict": "TP",
         "outcome_lenient": "TP",
         "on_target": 1,
-        "off_target": 0,
-        "total": 1,
+        "off_target": 2,
+        "total": 3,
         "dismissed": 0,
         "inconclusive": 0,
         "findings": [
@@ -68,7 +68,35 @@
             "rule_id": "AI001",
             "line": 57,
             "snippet": "String param = \"noCookieValueSupplied\";\n        if (theCookies != null) {\n            for (javax.servlet.http.Cookie theCookie : theCookies) {\n                if (theCookie.getName().equals(\"BenchmarkTest00001\")) {\n                    param = java.net.URLDecoder.decode(theCookie.getValue(), \"UTF-8\");\n                    break;\n                }\n            }\n        }\n\n        String fileName = null;\n        java.io.FileInputStream fis = null;\n\n        try {\n            fileName = org.owasp.benchmark.helpers.Utils.TESTFILES_DIR + param;\n            fis = new java.io.FileInputStream(new java.io.File(fileName));",
-            "issue": "Path traversal via user-controlled cookie value allows reading arbitrary files on the server (CWE-22)."
+            "issue": "Path Traversal via client-controlled cookie value used in file path construction"
+          },
+          {
+            "cwe_raw": "CWE-565",
+            "cwes": [
+              565
+            ],
+            "severity": "Medium",
+            "status": "valid",
+            "triaged": false,
+            "triage_reason": null,
+            "rule_id": "AI001",
+            "line": 41,
+            "snippet": "userCookie.setPath(request.getRequestURI());\n        userCookie.setDomain(new java.net.URL(request.getRequestURL().toString()).getHost());\n        response.addCookie(userCookie);",
+            "issue": "Cookie domain derived from potentially attacker-influenced request URL host"
+          },
+          {
+            "cwe_raw": "CWE-117",
+            "cwes": [
+              117
+            ],
+            "severity": "Low",
+            "status": "valid",
+            "triaged": false,
+            "triage_reason": null,
+            "rule_id": "AI001",
+            "line": 86,
+            "snippet": "System.out.println(\"Couldn't open FileInputStream on file: '\" + fileName + \"'\");",
+            "issue": "User-controlled file path logged to stdout without sanitization"
           }
         ]
       },
@@ -96,7 +124,7 @@
             "rule_id": "AI001",
             "line": 57,
             "snippet": "String param = \"noCookieValueSupplied\";\n        if (theCookies != null) {\n            for (javax.servlet.http.Cookie theCookie : theCookies) {\n                if (theCookie.getName().equals(\"BenchmarkTest00002\")) {\n                    param = java.net.URLDecoder.decode(theCookie.getValue(), \"UTF-8\");\n                    break;\n                }\n            }\n        }\n\n        String fileName = null;\n        java.io.FileOutputStream fos = null;\n\n        try {\n            fileName = org.owasp.benchmark.helpers.Utils.TESTFILES_DIR + param;\n\n            fos = new java.io.FileOutputStream(fileName, false);",
-            "issue": "Path traversal via client-controlled cookie value leading to arbitrary file write/overwrite"
+            "issue": "Path Traversal in FileOutputStream via unvalidated cookie value"
           }
         ]
       },
@@ -115,43 +143,29 @@
       },
       "BenchmarkTest00004": {
         "expected": true,
-        "strict": true,
-        "lenient": true,
-        "outcome_strict": "TP",
-        "outcome_lenient": "TP",
-        "on_target": 1,
+        "strict": false,
+        "lenient": false,
+        "outcome_strict": "FN",
+        "outcome_lenient": "FN",
+        "on_target": 0,
         "off_target": 1,
-        "total": 2,
+        "total": 1,
         "dismissed": 0,
         "inconclusive": 0,
         "findings": [
           {
-            "cwe_raw": "CWE-501",
+            "cwe_raw": "CWE-15",
             "cwes": [
-              501
+              15
             ],
             "severity": "Medium",
             "status": "valid",
             "triaged": false,
             "triage_reason": null,
             "rule_id": "AI001",
-            "line": 55,
-            "snippet": "javax.servlet.http.Cookie[] theCookies = request.getCookies();\n\n        String param = \"noCookieValueSupplied\";\n        if (theCookies != null) {\n            for (javax.servlet.http.Cookie theCookie : theCookies) {\n                if (theCookie.getName().equals(\"BenchmarkTest00004\")) {\n                    param = java.net.URLDecoder.decode(theCookie.getValue(), \"UTF-8\");\n                    break;\n                }\n            }\n        }\n\n        // javax.servlet.http.HttpSession.setAttribute(java.lang.String^,java.lang.Object)\n        request.getSession().setAttribute(param, \"10340\");",
-            "issue": "Trust boundary violation: client-controlled cookie value is used directly as a session attribute name without validation"
-          },
-          {
-            "cwe_raw": "CWE-15",
-            "cwes": [
-              15
-            ],
-            "severity": "Low",
-            "status": "valid",
-            "triaged": false,
-            "triage_reason": null,
-            "rule_id": "AI001",
-            "line": 41,
-            "snippet": "userCookie.setPath(request.getRequestURI());\n        userCookie.setDomain(new java.net.URL(request.getRequestURL().toString()).getHost());",
-            "issue": "Cookie Domain/Path attributes derived from attacker-controlled Host header and request URI"
+            "line": 57,
+            "snippet": "String param = \"noCookieValueSupplied\";\n        if (theCookies != null) {\n            for (javax.servlet.http.Cookie theCookie : theCookies) {\n                if (theCookie.getName().equals(\"BenchmarkTest00004\")) {\n                    param = java.net.URLDecoder.decode(theCookie.getValue(), \"UTF-8\");\n                    break;\n                }\n            }\n        }\n\n        // javax.servlet.http.HttpSession.setAttribute(java.lang.String^,java.lang.Object)\n        request.getSession().setAttribute(param, \"10340\");",
+            "issue": "Client-controlled cookie value used as session attribute key without validation, enabling overwrite of arbitrary session attributes"
           }
         ]
       },
@@ -178,22 +192,22 @@
             "triage_reason": null,
             "rule_id": "AI001",
             "line": 63,
-            "snippet": "javax.crypto.Cipher c = javax.crypto.Cipher.getInstance(\"DES/CBC/PKCS5Padding\");\n\n            // Prepare the cipher to encrypt\n            javax.crypto.SecretKey key = javax.crypto.KeyGenerator.getInstance(\"DES\").generateKey();\n            java.security.spec.AlgorithmParameterSpec paramSpec =\n                    new javax.crypto.spec.IvParameterSpec(iv);\n            c.init(javax.crypto.Cipher.ENCRYPT_MODE, key, paramSpec);",
-            "issue": "Use of weak/broken DES cryptographic algorithm to protect sensitive data"
+            "snippet": "javax.crypto.Cipher c = javax.crypto.Cipher.getInstance(\"DES/CBC/PKCS5Padding\");\n\n// Prepare the cipher to encrypt\njavax.crypto.SecretKey key = javax.crypto.KeyGenerator.getInstance(\"DES\").generateKey();",
+            "issue": "Use of weak cryptographic algorithm DES for encryption"
           },
           {
             "cwe_raw": "CWE-209",
             "cwes": [
               209
             ],
-            "severity": "Low",
+            "severity": "Medium",
             "status": "valid",
             "triaged": false,
             "triage_reason": null,
             "rule_id": "AI001",
-            "line": 115,
-            "snippet": "response.getWriter()\n                    .println(\n                            \"Problem executing crypto - javax.crypto.Cipher.getInstance(java.lang.String,java.security.Provider) Test Case\");\n            e.printStackTrace(response.getWriter());\n            throw new ServletException(e);",
-            "issue": "Stack trace and internal exception details exposed to the client"
+            "line": 118,
+            "snippet": "e.printStackTrace(response.getWriter());",
+            "issue": "Stack trace disclosure to HTTP response via printStackTrace()"
           }
         ]
       },
@@ -220,8 +234,8 @@
             "triage_reason": null,
             "rule_id": "AI001",
             "line": 44,
-            "snippet": "String param = \"\";\n        if (request.getHeader(\"BenchmarkTest00006\") != null) {\n            param = request.getHeader(\"BenchmarkTest00006\");\n        }\n\n        // URL Decode the header value since req.getHeader() doesn't. Unlike req.getParameter().\n        param = java.net.URLDecoder.decode(param, \"UTF-8\");\n\n        java.util.List<String> argList = new java.util.ArrayList<String>();\n\n        String osName = System.getProperty(\"os.name\");\n        if (osName.indexOf(\"Windows\") != -1) {\n            argList.add(\"cmd.exe\");\n            argList.add(\"/c\");\n        } else {\n            argList.add(\"sh\");\n            argList.add(\"-c\");\n        }\n        argList.add(\"echo \" + param);\n\n        ProcessBuilder pb = new ProcessBuilder();\n\n        pb.command(argList);\n\n        try {\n            Process p = pb.start();\n            org.owasp.benchmark.helpers.Utils.printOSCommandResults(p, response);",
-            "issue": "OS command injection via attacker-controlled HTTP header concatenated into a shell command"
+            "snippet": "String param = \"\";\n        if (request.getHeader(\"BenchmarkTest00006\") != null) {\n            param = request.getHeader(\"BenchmarkTest00006\");\n        }\n\n        // URL Decode the header value since req.getHeader() doesn't. Unlike req.getParameter().\n        param = java.net.URLDecoder.decode(param, \"UTF-8\");\n\n        java.util.List<String> argList = new java.util.ArrayList<String>();\n\n        String osName = System.getProperty(\"os.name\");\n        if (osName.indexOf(\"Windows\") != -1) {\n            argList.add(\"cmd.exe\");\n            argList.add(\"/c\");\n        } else {\n            argList.add(\"sh\");\n            argList.add(\"-c\");\n        }\n        argList.add(\"echo \" + param);\n\n        ProcessBuilder pb = new ProcessBuilder();\n\n        pb.command(argList);",
+            "issue": "OS Command Injection via HTTP header"
           }
         ]
       },
@@ -242,335 +256,14 @@
             "cwes": [
               78
             ],
-            "severity": "High",
+            "severity": "Critical",
             "status": "valid",
             "triaged": false,
             "triage_reason": null,
             "rule_id": "AI001",
             "line": 44,
             "snippet": "String param = \"\";\n        if (request.getHeader(\"BenchmarkTest00007\") != null) {\n            param = request.getHeader(\"BenchmarkTest00007\");\n        }\n\n        // URL Decode the header value since req.getHeader() doesn't. Unlike req.getParameter().\n        param = java.net.URLDecoder.decode(param, \"UTF-8\");\n\n        String cmd =\n                org.owasp.benchmark.helpers.Utils.getInsecureOSCommandString(\n                        this.getClass().getClassLoader());\n        String[] args = {cmd};\n        String[] argsEnv = {param};\n\n        Runtime r = Runtime.getRuntime();\n\n        try {\n            Process p = r.exec(args, argsEnv);",
-            "issue": "OS command injection / untrusted environment variable injection into Runtime.exec"
-          }
-        ]
-      },
-      "BenchmarkTest00008": {
-        "expected": true,
-        "strict": true,
-        "lenient": true,
-        "outcome_strict": "TP",
-        "outcome_lenient": "TP",
-        "on_target": 1,
-        "off_target": 0,
-        "total": 1,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": [
-          {
-            "cwe_raw": "CWE-89",
-            "cwes": [
-              89
-            ],
-            "severity": "Critical",
-            "status": "valid",
-            "triaged": false,
-            "triage_reason": null,
-            "rule_id": "AI001",
-            "line": 44,
-            "snippet": "String param = \"\";\n        if (request.getHeader(\"BenchmarkTest00008\") != null) {\n            param = request.getHeader(\"BenchmarkTest00008\");\n        }\n\n        // URL Decode the header value since req.getHeader() doesn't. Unlike req.getParameter().\n        param = java.net.URLDecoder.decode(param, \"UTF-8\");\n\n        String sql = \"{call \" + param + \"}\";\n\n        try {\n            java.sql.Connection connection =\n                    org.owasp.benchmark.helpers.DatabaseHelper.getSqlConnection();\n            java.sql.CallableStatement statement = connection.prepareCall(sql);\n            java.sql.ResultSet rs = statement.executeQuery();",
-            "issue": "SQL injection via attacker-controlled HTTP header concatenated into a CallableStatement query"
-          }
-        ]
-      },
-      "BenchmarkTest00009": {
-        "expected": false,
-        "strict": false,
-        "lenient": false,
-        "outcome_strict": "TN",
-        "outcome_lenient": "TN",
-        "on_target": 0,
-        "off_target": 0,
-        "total": 0,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": []
-      },
-      "BenchmarkTest00010": {
-        "expected": false,
-        "strict": true,
-        "lenient": true,
-        "outcome_strict": "FP",
-        "outcome_lenient": "FP",
-        "on_target": 1,
-        "off_target": 0,
-        "total": 1,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": [
-          {
-            "cwe_raw": "CWE-330",
-            "cwes": [
-              330
-            ],
-            "severity": "High",
-            "status": "valid",
-            "triaged": false,
-            "triage_reason": null,
-            "rule_id": "AI001",
-            "line": 63,
-            "snippet": "int randNumber = java.security.SecureRandom.getInstance(\"SHA1PRNG\").nextInt(99);\n            String rememberMeKey = Integer.toString(randNumber);",
-            "issue": "Weak randomness in remember-me authentication token allows trivial brute-force forgery of the remember-me cookie"
-          }
-        ]
-      },
-      "BenchmarkTest00011": {
-        "expected": true,
-        "strict": true,
-        "lenient": true,
-        "outcome_strict": "TP",
-        "outcome_lenient": "TP",
-        "on_target": 1,
-        "off_target": 0,
-        "total": 1,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": [
-          {
-            "cwe_raw": "CWE-22",
-            "cwes": [
-              22
-            ],
-            "severity": "Medium",
-            "status": "valid",
-            "triaged": false,
-            "triage_reason": null,
-            "rule_id": "AI001",
-            "line": 44,
-            "snippet": "String param = \"\";\n        java.util.Enumeration<String> headers = request.getHeaders(\"BenchmarkTest00011\");\n\n        if (headers != null && headers.hasMoreElements()) {\n            param = headers.nextElement(); // just grab first element\n        }\n\n        // URL Decode the header value since req.getHeaders() doesn't. Unlike req.getParameters().\n        param = java.net.URLDecoder.decode(param, \"UTF-8\");\n\n        java.io.File fileTarget = new java.io.File(param, \"/Test.txt\");\n        response.getWriter()\n                .println(\n                        \"Access to file: '\"\n                                + org.owasp\n                                        .esapi\n                                        .ESAPI\n                                        .encoder()\n                                        .encodeForHTML(fileTarget.toString())\n                                + \"' created.\");\n        if (fileTarget.exists()) {\n            response.getWriter().println(\" And file already exists.\");\n        } else {\n            response.getWriter().println(\" But file doesn't exist yet.\");\n        }",
-            "issue": "Path traversal via unvalidated, attacker-controlled HTTP header used to construct a java.io.File path (information disclosure through existence checks)"
-          }
-        ]
-      },
-      "BenchmarkTest00012": {
-        "expected": true,
-        "strict": true,
-        "lenient": true,
-        "outcome_strict": "TP",
-        "outcome_lenient": "TP",
-        "on_target": 2,
-        "off_target": 0,
-        "total": 2,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": [
-          {
-            "cwe_raw": "CWE-90",
-            "cwes": [
-              90
-            ],
-            "severity": "High",
-            "status": "valid",
-            "triaged": false,
-            "triage_reason": null,
-            "rule_id": "AI001",
-            "line": 44,
-            "snippet": "String param = \"\";\n        java.util.Enumeration<String> headers = request.getHeaders(\"BenchmarkTest00012\");\n\n        if (headers != null && headers.hasMoreElements()) {\n            param = headers.nextElement(); // just grab first element\n        }\n\n        // URL Decode the header value since req.getHeaders() doesn't. Unlike req.getParameters().\n        param = java.net.URLDecoder.decode(param, \"UTF-8\");",
-            "issue": "LDAP injection via unescaped request header value concatenated into LDAP search filter"
-          },
-          {
-            "cwe_raw": "CWE-90",
-            "cwes": [
-              90
-            ],
-            "severity": "High",
-            "status": "valid",
-            "triaged": false,
-            "triage_reason": null,
-            "rule_id": "AI001",
-            "line": 60,
-            "snippet": "String filter = \"(&(objectclass=person))(|(uid=\" + param + \")(street={0}))\";",
-            "issue": "Unescaped LDAP filter string constructed with attacker-controlled parameter"
-          }
-        ]
-      },
-      "BenchmarkTest00013": {
-        "expected": true,
-        "strict": true,
-        "lenient": true,
-        "outcome_strict": "TP",
-        "outcome_lenient": "TP",
-        "on_target": 1,
-        "off_target": 1,
-        "total": 2,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": [
-          {
-            "cwe_raw": "CWE-79",
-            "cwes": [
-              79
-            ],
-            "severity": "Medium",
-            "status": "valid",
-            "triaged": false,
-            "triage_reason": null,
-            "rule_id": "AI001",
-            "line": 44,
-            "snippet": "String param = \"\";\n        java.util.Enumeration<String> headers = request.getHeaders(\"Referer\");\n\n        if (headers != null && headers.hasMoreElements()) {\n            param = headers.nextElement(); // just grab first element\n        }\n\n        // URL Decode the header value since req.getHeaders() doesn't. Unlike req.getParameters().\n        param = java.net.URLDecoder.decode(param, \"UTF-8\");\n\n        response.setHeader(\"X-XSS-Protection\", \"0\");\n        Object[] obj = {\"a\", \"b\"};\n        response.getWriter().format(java.util.Locale.US, param, obj);",
-            "issue": "Reflected Cross-Site Scripting (XSS) via unescaped Referer header written to an HTML response"
-          },
-          {
-            "cwe_raw": "CWE-134",
-            "cwes": [
-              134
-            ],
-            "severity": "Low",
-            "status": "valid",
-            "triaged": false,
-            "triage_reason": null,
-            "rule_id": "AI001",
-            "line": 52,
-            "snippet": "param = java.net.URLDecoder.decode(param, \"UTF-8\");\n\n        response.setHeader(\"X-XSS-Protection\", \"0\");\n        Object[] obj = {\"a\", \"b\"};\n        response.getWriter().format(java.util.Locale.US, param, obj);",
-            "issue": "Externally controlled format string can trigger unhandled exceptions (denial of service)"
-          }
-        ]
-      },
-      "BenchmarkTest00014": {
-        "expected": true,
-        "strict": true,
-        "lenient": true,
-        "outcome_strict": "TP",
-        "outcome_lenient": "TP",
-        "on_target": 1,
-        "off_target": 0,
-        "total": 1,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": [
-          {
-            "cwe_raw": "CWE-79",
-            "cwes": [
-              79
-            ],
-            "severity": "Medium",
-            "status": "valid",
-            "triaged": false,
-            "triage_reason": null,
-            "rule_id": "AI001",
-            "line": 44,
-            "snippet": "String param = \"\";\n        java.util.Enumeration<String> headers = request.getHeaders(\"Referer\");\n\n        if (headers != null && headers.hasMoreElements()) {\n            param = headers.nextElement(); // just grab first element\n        }\n\n        // URL Decode the header value since req.getHeaders() doesn't. Unlike req.getParameters().\n        param = java.net.URLDecoder.decode(param, \"UTF-8\");\n\n        response.setHeader(\"X-XSS-Protection\", \"0\");\n        Object[] obj = {\"a\", \"b\"};\n        response.getWriter().format(param, obj);",
-            "issue": "Reflected Cross-Site Scripting (XSS): attacker-controlled Referer header is written directly into an HTML response without encoding"
-          }
-        ]
-      },
-      "BenchmarkTest00015": {
-        "expected": true,
-        "strict": true,
-        "lenient": true,
-        "outcome_strict": "TP",
-        "outcome_lenient": "TP",
-        "on_target": 1,
-        "off_target": 0,
-        "total": 1,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": [
-          {
-            "cwe_raw": "CWE-78",
-            "cwes": [
-              78
-            ],
-            "severity": "Critical",
-            "status": "valid",
-            "triaged": false,
-            "triage_reason": null,
-            "rule_id": "AI001",
-            "line": 56,
-            "snippet": "java.util.List<String> argList = new java.util.ArrayList<String>();\n\n        String osName = System.getProperty(\"os.name\");\n        if (osName.indexOf(\"Windows\") != -1) {\n            argList.add(\"cmd.exe\");\n            argList.add(\"/c\");\n        } else {\n            argList.add(\"sh\");\n            argList.add(\"-c\");\n        }\n        argList.add(\"echo \" + param);\n\n        ProcessBuilder pb = new ProcessBuilder();\n\n        pb.command(argList);\n\n        try {\n            Process p = pb.start();",
-            "issue": "OS command injection via attacker-controlled HTTP header concatenated into a shell command"
-          }
-        ]
-      },
-      "BenchmarkTest00016": {
-        "expected": false,
-        "strict": false,
-        "lenient": false,
-        "outcome_strict": "TN",
-        "outcome_lenient": "TN",
-        "on_target": 0,
-        "off_target": 1,
-        "total": 1,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": [
-          {
-            "cwe_raw": "CWE-113",
-            "cwes": [
-              113
-            ],
-            "severity": "Medium",
-            "status": "valid",
-            "triaged": false,
-            "triage_reason": null,
-            "rule_id": "AI001",
-            "line": 45,
-            "snippet": "java.util.Enumeration<String> headers = request.getHeaders(\"BenchmarkTest00016\");\n\n        if (headers != null && headers.hasMoreElements()) {\n            param = headers.nextElement(); // just grab first element\n        }\n\n        // URL Decode the header value since req.getHeaders() doesn't. Unlike req.getParameters().\n        param = java.net.URLDecoder.decode(param, \"UTF-8\");\n\n        byte[] input = new byte[1000];\n        String str = \"?\";\n        Object inputParam = param;\n        if (inputParam instanceof String) str = ((String) inputParam);\n        if (inputParam instanceof java.io.InputStream) {\n            int i = ((java.io.InputStream) inputParam).read(input);\n            if (i == -1) {\n                response.getWriter()\n                        .println(\n                                \"This input source requires a POST, not a GET. Incompatible UI for the InputStream source.\");\n                return;\n            }\n            str = new String(input, 0, i);\n        }\n        if (\"\".equals(str)) str = \"No cookie value supplied\";\n        javax.servlet.http.Cookie cookie = new javax.servlet.http.Cookie(\"SomeCookie\", str);\n\n        cookie.setSecure(true);\n        cookie.setHttpOnly(true);\n        cookie.setPath(request.getRequestURI()); // i.e., set path to JUST this servlet\n        // e.g., /benchmark/sql-01/BenchmarkTest01001\n        response.addCookie(cookie);",
-            "issue": "HTTP response splitting / cookie injection via URL-decoded, unvalidated request header placed directly into a Set-Cookie value"
-          }
-        ]
-      },
-      "BenchmarkTest00017": {
-        "expected": true,
-        "strict": true,
-        "lenient": true,
-        "outcome_strict": "TP",
-        "outcome_lenient": "TP",
-        "on_target": 1,
-        "off_target": 0,
-        "total": 1,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": [
-          {
-            "cwe_raw": "CWE-78",
-            "cwes": [
-              78
-            ],
-            "severity": "High",
-            "status": "valid",
-            "triaged": false,
-            "triage_reason": null,
-            "rule_id": "AI001",
-            "line": 44,
-            "snippet": "String param = \"\";\n        java.util.Enumeration<String> headers = request.getHeaders(\"BenchmarkTest00017\");\n\n        if (headers != null && headers.hasMoreElements()) {\n            param = headers.nextElement(); // just grab first element\n        }\n\n        // URL Decode the header value since req.getHeaders() doesn't. Unlike req.getParameters().\n        param = java.net.URLDecoder.decode(param, \"UTF-8\");\n\n        String cmd = \"\";\n        String osName = System.getProperty(\"os.name\");\n        if (osName.indexOf(\"Windows\") != -1) {\n            cmd = org.owasp.benchmark.helpers.Utils.getOSCommandString(\"echo\");\n        }\n\n        Runtime r = Runtime.getRuntime();\n\n        try {\n            Process p = r.exec(cmd + param);",
-            "issue": "OS command injection via attacker-controlled HTTP header concatenated into Runtime.exec()"
-          }
-        ]
-      },
-      "BenchmarkTest00018": {
-        "expected": true,
-        "strict": true,
-        "lenient": true,
-        "outcome_strict": "TP",
-        "outcome_lenient": "TP",
-        "on_target": 1,
-        "off_target": 0,
-        "total": 1,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": [
-          {
-            "cwe_raw": "CWE-89",
-            "cwes": [
-              89
-            ],
-            "severity": "High",
-            "status": "valid",
-            "triaged": false,
-            "triage_reason": null,
-            "rule_id": "AI001",
-            "line": 44,
-            "snippet": "String param = \"\";\n        java.util.Enumeration<String> headers = request.getHeaders(\"BenchmarkTest00018\");\n\n        if (headers != null && headers.hasMoreElements()) {\n            param = headers.nextElement(); // just grab first element\n        }\n\n        // URL Decode the header value since req.getHeaders() doesn't. Unlike req.getParameters().\n        param = java.net.URLDecoder.decode(param, \"UTF-8\");\n\n        String sql = \"INSERT INTO users (username, password) VALUES ('foo','\" + param + \"')\";\n\n        try {\n            java.sql.Statement statement =\n                    org.owasp.benchmark.helpers.DatabaseHelper.getSqlStatement();\n            int count = statement.executeUpdate(sql);",
-            "issue": "SQL injection via unsanitized HTTP header value concatenated into SQL INSERT statement"
+            "issue": "OS Command Injection via HTTP header-controlled environment variables"
           }
         ]
       }

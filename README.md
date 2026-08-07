@@ -1,8 +1,9 @@
 # Scan BenchmarkJava bằng Metis
 
 **Live demo:** [https://scan-benchmarkjava-production.up.railway.app](https://scan-benchmarkjava-production.up.railway.app)
-(bản public, read-only — chỉ có Results + Security Report + Knowledge Base; trang Run Scan
-không được dựng ở đó, xem mục [Deploy](#deploy-railway-chế-độ-read-only))
+(bản public, read-only — sidebar có **Security Report** (trang mặc định) + **Comparison** +
+**Knowledge Base**; trang Run Scan không được dựng ở đó, xem mục
+[Deploy](#deploy-railway-chế-độ-read-only))
 
 Chạy Metis trên [OWASP BenchmarkJava](https://github.com/OWASP-Benchmark/BenchmarkJava), đo thời gian / token và chấm precision–recall theo ground truth (`expectedresults-1.2.csv`). Không dùng LLM-judge.
 
@@ -70,7 +71,7 @@ Chỉ liệt kê phần đã commit lên GitHub (`git ls-files`); `metis/` và `
 
 | Thư mục / File               | Vai trò                                                                                                                                  |
 | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/app.py`                 | Ứng dụng Streamlit chính — điều khiển scan, xem Results/Security Report/Knowledge Base                                                  |
+| `src/app.py`                 | Ứng dụng Streamlit chính — điều khiển scan, xem Security Report/Comparison/Knowledge Base                                               |
 | `src/scan_runner.py`         | Seam gọi Metis (chạy scan nền, đọc SARIF/summary) — `app.py` chỉ đọc qua đây, không tự parse file kết quả                               |
 | `src/kb_search.py`           | Search Knowledge Base: keyword (TF-IDF/cosine) + semantic (embedding OPENCODE, fallback TF-IDF+LSA)                                     |
 | `src/alert_normalizer.py`    | **Chuẩn hóa alert** — gộp SARIF (semgrep) và `bench_summary.json` (Metis) về một schema `Alert` phẳng, xem chi tiết [bên dưới](#chuẩn-hóa-alert-alert_normalizerpy) |
@@ -79,11 +80,11 @@ Chỉ liệt kê phần đã commit lên GitHub (`git ls-files`); `metis/` và `
 | `src/report_charts.py`       | Dựng spec Altair từ kết quả truy vấn — chỉ vẽ đúng bảng số liệu được đưa, không tự tính lại                                              |
 | `src/report_chat.py`         | **Hỏi đáp lai** — mô hình chọn truy vấn và viết lời, Python đếm số; mọi thất bại rơi về đường tất định có nhãn                            |
 | `src/prompts/`               | System prompt có version, hash vào mọi báo cáo: `security_analyst.md` (agent phân tích) và `report_chat.md` (hỏi đáp)                    |
-| `scripts/`                   | Công cụ dòng lệnh cho dev: `bench.py`, `sweep.py`, `ablation.py`, `analyze.py` — không phải app                                          |
+| `scripts/`                   | Công cụ dòng lệnh cho dev: `bench.py`, `sweep.py`, `ablation.py`, `analyze.py`, `bake_chat.py` — không phải app                          |
 | `data/kb/`                   | Kho tri thức (Knowledge Base): docs OWASP Top 10, ví dụ lỗ hổng, rule Semgrep tham khảo                                                  |
 | `data/rules/`                | Rule Semgrep tùy biến cho BenchmarkJava (dùng ở arm `static` của ablation)                                                               |
-| `data/results/`              | Kết quả quét đã bake sẵn (`bench_summary.json`, `scorecard.md`, `compare.*`, `detail.json`) — phục vụ trang Results khi deploy read-only |
-| `data/analysis/`             | Báo cáo phân tích đã sinh sẵn (`report.jsonl` + `report.meta.json`) — phục vụ trang Security Report khi deploy read-only                 |
+| `data/results/`              | Kết quả quét đã bake sẵn (`bench_summary.json`, `scorecard.md`, `compare.*`, `detail.json`) — phục vụ trang Comparison khi deploy read-only |
+| `data/analysis/`             | Báo cáo phân tích đã sinh sẵn (`report.jsonl` + `report.meta.json`) + `chat_cache.json` (câu trả lời dựng sẵn) — phục vụ trang Security Report khi deploy read-only |
 | `docs/specs/`                | Spec kỹ thuật (`spec-ablation-runner.md`)                                                                                                |
 | `tests/`                     | Test đơn vị, mock toàn bộ mạng: `test_security_agent.py` (76 test) + `test_report_query.py` (76 test) + fixture                          |
 | `tests/e2e/`                 | Kiểm thử tự động — smoke test Playwright trên bản deploy                                                                                 |
@@ -180,8 +181,9 @@ timestamp, token, thời gian — nằm hết ở đây, nhờ vậy file phát 
 lần chạy `--no-llm`). Cả hai **được commit vào git**: bản deploy không giữ API key nên không
 thể tự sinh báo cáo.
 
-Xem kết quả tại trang **Security Report** của app, hoặc trên bản deploy:
-[/security-report](https://scan-benchmarkjava-production.up.railway.app/security-report).
+Xem kết quả tại trang **Security Report** của app — nó là trang mặc định, nên trên bản deploy
+chính là URL gốc:
+[https://scan-benchmarkjava-production.up.railway.app](https://scan-benchmarkjava-production.up.railway.app).
 
 Chạy test của agent (offline, 0 lần gọi mạng, không cần API key):
 
@@ -191,9 +193,23 @@ uv run pytest tests/test_security_agent.py -q
 
 ### Hỏi đáp và biểu đồ (`report_query.py` / `report_charts.py` / `report_chat.py`)
 
-Trang **Security Report** không còn là một danh sách tĩnh. Nó có ba tab: **Tổng quan**
-(KPI → ma trận `severity` × `confidence` → 6 biểu đồ), **Hỏi đáp** (chatbot),
-**Danh sách phát hiện** (bản cũ, giữ nguyên).
+Trang **Security Report** không còn là một danh sách tĩnh, và cũng là trang mặc định của app.
+Nó có hai tab, theo đúng thứ tự đó: **Hỏi đáp** (chatbot + danh sách phát hiện) và
+**Tổng quan** (KPI → ma trận `severity` × `confidence` → 6 biểu đồ).
+
+**Danh sách phát hiện không còn là tab riêng.** Nó nằm ngay dưới khung chat, và mỗi câu trả
+lời có thể thu hẹp nó về đúng những phát hiện mà câu trả lời đó dựa vào
+(`QueryResult.finding_ids`) — hỏi "liệt kê các lỗi CWE-89" thì danh sách bên dưới còn đúng 12
+phát hiện, kèm một nút "Xem tất cả" để bỏ thu hẹp. Câu trả lời và bằng chứng của nó nằm trên
+cùng một mặt, không phải hai tab.
+
+**Bảy câu hỏi gợi ý được trả lời sẵn** (`./scripts/bake_chat.py` → `data/analysis/chat_cache.json`)
+nên bấm là hiện ngay, không đợi hai lần gọi mô hình. Chỉ **lời văn** được cache: truy vấn vẫn
+chạy lại qua `report_query` mỗi lần mở trang, cache mang theo vân tay của báo cáo nó được bake
+cùng, và mọi con số trong lời văn vẫn phải qua đúng cái cổng `_unsupported_numbers()` mà một
+câu trả lời trực tiếp phải qua — lệch một con số là cache bị bỏ, rơi về đường thường. Mỗi câu
+trả lời in kèm **mô hình nào viết, hết bao nhiêu token, mất bao lâu**; với câu dựng sẵn thì
+token và thời gian là chi phí *lúc bake*, và dòng chú thích nói đúng như vậy.
 
 Ma trận nằm ngay dưới KPI vì nó trả lời câu mà hai biểu đồ cột không trả lời được: *bao
 nhiêu phát hiện vừa ở mức cao vừa có độ tin cậy thấp?* — `count_by severity` và
@@ -373,7 +389,7 @@ Kết quả: `data/results/ablation/<arm>/` + `data/results/ablation/compare.{md
 ## Deploy (Railway, chế độ read-only)
 
 Bản deploy dùng chung **công khai, không cần đăng nhập** — và **không chạy được scan**,
-**không giữ** `OPENCODE_API_KEY`. Nó chỉ phục vụ Results + Security Report +
+**không giữ** `OPENCODE_API_KEY`. Nó chỉ phục vụ Security Report + Comparison +
 Knowledge Base từ dữ liệu đã bake sẵn trong image. Cái giữ an toàn là instance không làm được
 gì, chứ không phải khó truy cập. Muốn quét thật thì chạy local như phần
 [Hướng dẫn chạy dự án](#hướng-dẫn-chạy-dự-án) trên.
@@ -382,9 +398,11 @@ gì, chứ không phải khó truy cập. Muốn quét thật thì chạy local 
 là chuyện trình bày, không phải lớp bảo vệ: thứ chặn scan vẫn là `scan_runner.runtime_mode()`
 từ chối spawn (ADR 19), và `page_run_scan` vẫn giữ nguyên guard read-only của nó dù không
 còn đường nào tới. Kèm theo đó, Streamlit phục vụ trang mặc định ở `/` và **bỏ qua**
-`url_path` của nó, nên trên bản deploy `/` là Results và `/results` là URL duy nhất không
-phân giải được. `/security-report` và `/knowledge-base` vẫn phân giải bình thường —
-`/security-report` là link README và báo cáo Week 3 phát ra nên nó phải sống.
+`url_path` của nó (`navigation/page.py`: `return "" if self._default else self._url_path`),
+nên đúng một trang không thể link tới bằng tên. Trang đó bây giờ là **Security Report**: `/`
+chính là nó, còn `/security-report` **không còn phân giải** — link công bố đã chuyển về URL
+gốc, ở README, ở báo cáo Week 3 và ở bài kiểm tra e2e. `/comparison` và `/knowledge-base` vẫn
+phân giải bình thường.
 
 Vì không có API key, bản deploy cũng **không thể tự sinh báo cáo phân tích** — nó chỉ hiển thị
 `data/analysis/report.jsonl` đã được commit và nướng vào image, đúng như nó hiển thị kết quả

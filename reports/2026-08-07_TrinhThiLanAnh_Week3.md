@@ -216,6 +216,8 @@ flowchart TB
 | **Hỏi đáp** (mặc định) | Chatbot tiếng Việt, 7 câu hỏi gợi ý **trả lời sẵn** (mỗi câu chạm một `op` khác nhau), khung "câu trả lời này được tạo ra thế nào?", và **danh sách phát hiện** ngay bên dưới |
 | **Tổng quan**          | Hàng KPI · ma trận `severity × confidence` có tô nền theo 4 dải · 6 biểu đồ                                                                                                   |
 
+Danh sách phát hiện **không còn là tab thứ ba**: nó nằm dưới khung chat và mỗi câu trả lời thu hẹp được nó về đúng `QueryResult.finding_ids` của mình — hỏi "liệt kê các lỗi CWE-89" thì danh sách còn đúng 12 phát hiện đó, kèm nút "Xem tất cả". Bảy câu gợi ý được `./scripts/bake_chat.py` dựng sẵn nên bấm là hiện ngay; chỉ **lời văn** được cache, còn truy vấn vẫn chạy lại qua `report_query` mỗi lần mở trang và vẫn phải qua đúng cổng `_unsupported_numbers()` — lệch một con số là cache bị bỏ. Mỗi câu trả lời in kèm **mô hình, token, thời gian**; với câu dựng sẵn thì đó là chi phí *lúc bake* và dòng chú thích nói rõ như vậy.
+
 ## 7. Ba kịch bản hỏng, chạy thật ở dòng lệnh
 
 Ba kiểu hỏng phân biệt được bằng **thông báo** và bằng **mã thoát**. Output thật, chạy lại ngày 2026-08-07.

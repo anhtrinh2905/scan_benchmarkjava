@@ -700,6 +700,29 @@ def test_a_cwe_number_from_a_label_is_not_treated_as_invention(report):
     assert not report_chat._unsupported_numbers("CWE-89 chiếm nhiều nhất.", result, "cwe")
 
 
+def test_a_grouped_number_the_table_holds_is_not_treated_as_invention(report):
+    """`482344` in the table, written `482.344` or `482,344` in prose, is the same number.
+
+    Read as bare digit runs it splits into 482 and 344 — neither of which the table holds —
+    so a correctly-quoted figure got thrown out as an invention. Found in production by
+    `scripts/bake_chat.py`: the overview answer lost its model prose to exactly this."""
+    result = rq.run_query(report, rq.QuerySpec(op="overview"))
+    tokens = next(row["value"] for row in result.table if row["label"] == "Token đã dùng")
+    for grouped in (f"{tokens:,}", f"{tokens:,}".replace(",", ".")):
+        assert not report_chat._unsupported_numbers(
+            f"Lần chạy này tiêu {grouped} token.", result, "tổng quan"
+        ), grouped
+
+
+def test_joining_grouped_digits_does_not_let_an_invented_number_through(report):
+    """The join is a tightening, not a loophole: an invented figure now has to clear the
+    gate whole instead of slipping past as two harmless fragments."""
+    result = rq.run_query(report, rq.QuerySpec(op="overview"))
+    assert report_chat._unsupported_numbers(
+        "Có tới 7.777 phát hiện nghiêm trọng.", result, "tổng quan"
+    ) == [7777]
+
+
 def test_the_model_is_never_shown_a_file_path_it_could_echo_as_its_own(report, monkeypatch):
     """The router turn lists the report's vocabulary, not its file paths — the same reason
     `security_agent._user_turn` withholds paths from the analysis call."""

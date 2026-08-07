@@ -10,44 +10,44 @@
   "semgrep_rulesets": [
     "p/java",
     "p/owasp-top-ten",
-    "/Users/trinhthilananh/Desktop/Personal/vinsoc/week2/scan_benchmarkjava/rules/benchmarkjava"
+    "/Users/trinhthilananh/Desktop/Personal/vinsoc/week2/scan_benchmarkjava/data/rules/benchmarkjava"
   ],
-  "wall_clock_seconds": 362.34,
+  "wall_clock_seconds": 223.83,
   "semgrep_seconds": null,
   "semgrep_stats": null,
   "usage": {
-    "input_tokens": 878998,
-    "output_tokens": 150941,
-    "total_tokens": 1029939,
-    "duration_seconds": 360.36
+    "input_tokens": 238209,
+    "output_tokens": 27550,
+    "total_tokens": 265759,
+    "duration_seconds": 221.9
   },
   "triage_precision": {
-    "with_status": 41,
-    "tp_like": 41,
+    "with_status": 11,
+    "tp_like": 11,
     "fp_like": 0,
     "inconclusive": 0,
     "precision": 1.0
   },
   "ground_truth": {
     "strict": {
-      "TP": 29,
-      "FP": 1,
+      "TP": 4,
+      "FP": 0,
       "FN": 3,
-      "TN": 3,
-      "precision": 0.9666666666666667,
-      "recall": 0.90625,
-      "fpr": 0.25,
-      "youden": 0.65625
+      "TN": 0,
+      "precision": 1.0,
+      "recall": 0.5714285714285714,
+      "fpr": null,
+      "youden": null
     },
     "lenient": {
-      "TP": 29,
-      "FP": 1,
+      "TP": 4,
+      "FP": 0,
       "FN": 3,
-      "TN": 3,
-      "precision": 0.9666666666666667,
-      "recall": 0.90625,
-      "fpr": 0.25,
-      "youden": 0.65625
+      "TN": 0,
+      "precision": 1.0,
+      "recall": 0.5714285714285714,
+      "fpr": null,
+      "youden": null
     },
     "per_test": {
       "BenchmarkTest00001": {
@@ -57,8 +57,8 @@
         "outcome_strict": "TP",
         "outcome_lenient": "TP",
         "on_target": 1,
-        "off_target": 0,
-        "total": 1,
+        "off_target": 2,
+        "total": 3,
         "dismissed": 0,
         "inconclusive": 0,
         "findings": [
@@ -70,57 +70,43 @@
             "severity": "High",
             "status": "valid",
             "triaged": true,
-            "triage_reason": "Verdict: Path traversal is valid — attacker-controlled cookie data flows unsanitized into a file path opened by FileInputStream and its contents are echoed in the response. Evidence: the cookie value is URL-decoded into param (src/main/java/org/owasp/benchmark/testcode/BenchmarkTest00001.java:61), concatenated directly onto TESTFILES_DIR (line 71), used to construct FileInputStream (line 72), and the first 1000 bytes read are written to the response (lines 74-84), with only HTML output encoding (lines 78, 84) and no input validation, canonicalization, or path containment check. Gap: none.",
+            "triage_reason": "Verdict: Attacker-controlled cookie value is used in file path without any validation or sanitization. Evidence: Cookie value extracted at lines 60-61 is directly concatenated into a file path at line 71 and opened at line 72. Gap: none.",
             "rule_id": "AI001",
-            "line": 67,
-            "snippet": "String fileName = null;\n        java.io.FileInputStream fis = null;\n\n        try {\n            fileName = org.owasp.benchmark.helpers.Utils.TESTFILES_DIR + param;\n            fis = new java.io.FileInputStream(new java.io.File(fileName));\n            byte[] b = new byte[1000];\n            int size = fis.read(b);",
-            "issue": "Path traversal (arbitrary file read) via attacker-controlled cookie value concatenated into a file path"
-          }
-        ]
-      },
-      "BenchmarkTest00002": {
-        "expected": true,
-        "strict": true,
-        "lenient": true,
-        "outcome_strict": "TP",
-        "outcome_lenient": "TP",
-        "on_target": 1,
-        "off_target": 1,
-        "total": 2,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": [
-          {
-            "cwe_raw": "CWE-22",
-            "cwes": [
-              22
-            ],
-            "severity": "High",
-            "status": "valid",
-            "triaged": true,
-            "triage_reason": "Verdict: The finding is valid — an unvalidated, URL-decoded cookie value flows directly into a filesystem path used by a FileOutputStream write/truncate sink. Evidence: request.getCookies() at line 55 feeds a client-controlled value that is URL-decoded at line 61 into `param`, which is then concatenated with Utils.TESTFILES_DIR and passed to new FileOutputStream(fileName, false), with no path validation or normalization anywhere in the shown code. Gap: none.",
-            "rule_id": "AI001",
-            "line": 57,
-            "snippet": "String param = \"noCookieValueSupplied\";\n        if (theCookies != null) {\n            for (javax.servlet.http.Cookie theCookie : theCookies) {\n                if (theCookie.getName().equals(\"BenchmarkTest00002\")) {\n                    param = java.net.URLDecoder.decode(theCookie.getValue(), \"UTF-8\");\n                    break;\n                }\n            }\n        }\n\n        String fileName = null;\n        java.io.FileOutputStream fos = null;\n\n        try {\n            fileName = org.owasp.benchmark.helpers.Utils.TESTFILES_DIR + param;\n\n            fos = new java.io.FileOutputStream(fileName, false);",
-            "issue": "Path traversal in file write operation via unvalidated cookie value"
+            "line": 60,
+            "snippet": "if (theCookie.getName().equals(\"BenchmarkTest00001\")) {\n    param = java.net.URLDecoder.decode(theCookie.getValue(), \"UTF-8\");\n    break;\n}\n...\nfileName = org.owasp.benchmark.helpers.Utils.TESTFILES_DIR + param;\nfis = new java.io.FileInputStream(new java.io.File(fileName));",
+            "issue": "Path Traversal: Attacker-controlled cookie value is used unsafely in file path construction, allowing arbitrary file read"
           },
           {
-            "cwe_raw": "CWE-20",
+            "cwe_raw": "CWE-532",
             "cwes": [
-              20
+              532
             ],
             "severity": "Low",
             "status": "valid",
             "triaged": true,
-            "triage_reason": "Verdict: The cookie Domain attribute is directly populated from request-derived Host data with no validation or trusted configuration source. Evidence: BenchmarkTest00002.java:42 assigns userCookie.setDomain(new java.net.URL(request.getRequestURL().toString()).getHost()), where getRequestURL() derives from the client-controlled Host header, and line 43 emits the cookie via response.addCookie; lines 33-47 show no allowlist, sanitization, or guard. Gap: none.",
+            "triage_reason": "The full file path constructed from an internal directory (Utils.TESTFILES_DIR, derived from user.dir) concatenated with attacker-controlled cookie input is logged verbatim to stdout on exception, exposing the internal directory structure to anyone with log access.",
             "rule_id": "AI001",
-            "line": 41,
-            "snippet": "userCookie.setPath(request.getRequestURI());\n        userCookie.setDomain(new java.net.URL(request.getRequestURL().toString()).getHost());",
-            "issue": "Cookie Domain attribute derived from attacker-controlled Host header"
+            "line": 86,
+            "snippet": "System.out.println(\"Couldn't open FileInputStream on file: '\" + fileName + \"'\");",
+            "issue": "Sensitive file path logged to stdout on error, potentially leaking directory structure or internal paths"
+          },
+          {
+            "cwe_raw": "CWE-15",
+            "cwes": [
+              15
+            ],
+            "severity": "Medium",
+            "status": "valid",
+            "triaged": true,
+            "triage_reason": "Cookie domain is derived directly from the client-supplied Host header via request.getRequestURL() with no validation, allowlist, or hardcoded fallback anywhere in the doGet method.",
+            "rule_id": "AI001",
+            "line": 42,
+            "snippet": "userCookie.setDomain(new java.net.URL(request.getRequestURL().toString()).getHost());",
+            "issue": "Cookie domain derived from client-supplied request URL, enabling potential Host header manipulation"
           }
         ]
       },
-      "BenchmarkTest00003": {
+      "BenchmarkTest00002": {
         "expected": true,
         "strict": false,
         "lenient": false,
@@ -133,31 +119,73 @@
         "inconclusive": 0,
         "findings": []
       },
-      "BenchmarkTest00004": {
+      "BenchmarkTest00003": {
         "expected": true,
-        "strict": true,
-        "lenient": true,
-        "outcome_strict": "TP",
-        "outcome_lenient": "TP",
-        "on_target": 1,
-        "off_target": 0,
+        "strict": false,
+        "lenient": false,
+        "outcome_strict": "FN",
+        "outcome_lenient": "FN",
+        "on_target": 0,
+        "off_target": 1,
         "total": 1,
         "dismissed": 0,
         "inconclusive": 0,
         "findings": [
           {
-            "cwe_raw": "CWE-501",
+            "cwe_raw": "CWE-565",
             "cwes": [
-              501
+              565
             ],
             "severity": "Medium",
             "status": "valid",
             "triaged": true,
-            "triage_reason": "Verdict: The trust boundary violation is confirmed — an attacker-controlled cookie value flows unvalidated into the HttpSession attribute name. Evidence: in doPost(), the cookie 'BenchmarkTest00004' value is URL-decoded into param at BenchmarkTest00004.java:61 with no validation, filtering, or length restriction, and param is then passed directly as the attribute-name argument to request.getSession().setAttribute(param, \"10340\") at line 68, crossing the untrusted-request to trusted-session trust boundary (CWE-501). Gap: none.",
+            "triage_reason": "Cookie domain is derived from request.getRequestURL().getHost(), which uses the attacker-controllable HTTP Host header. No validation, allowlisting, or static domain override is applied before setDomain().",
             "rule_id": "AI001",
-            "line": 57,
-            "snippet": "String param = \"noCookieValueSupplied\";\n        if (theCookies != null) {\n            for (javax.servlet.http.Cookie theCookie : theCookies) {\n                if (theCookie.getName().equals(\"BenchmarkTest00004\")) {\n                    param = java.net.URLDecoder.decode(theCookie.getValue(), \"UTF-8\");\n                    break;\n                }\n            }\n        }\n\n        // javax.servlet.http.HttpSession.setAttribute(java.lang.String^,java.lang.Object)\n        request.getSession().setAttribute(param, \"10340\");",
-            "issue": "Trust boundary violation: attacker-controlled cookie value is stored as a session attribute name without validation"
+            "line": 42,
+            "snippet": "userCookie.setDomain(new java.net.URL(request.getRequestURL().toString()).getHost());",
+            "issue": "Cookie Domain derived from HTTP Host header, enabling cookie domain poisoning via Host header injection"
+          }
+        ]
+      },
+      "BenchmarkTest00004": {
+        "expected": true,
+        "strict": false,
+        "lenient": false,
+        "outcome_strict": "FN",
+        "outcome_lenient": "FN",
+        "on_target": 0,
+        "off_target": 2,
+        "total": 2,
+        "dismissed": 0,
+        "inconclusive": 0,
+        "findings": [
+          {
+            "cwe_raw": "CWE-807",
+            "cwes": [
+              807
+            ],
+            "severity": "Medium",
+            "status": "valid",
+            "triaged": true,
+            "triage_reason": "Verdict: The cookie domain is derived from request.getRequestURL() via java.net.URL.getHost() with no host validation, enabling Host header injection. Evidence: Line 42 chains HttpServletRequest.getRequestURL() → toString() → new URL() → getHost() → Cookie.setDomain() without any allowlist, validation, or hardcoded domain guard. Gap: none — the entire tainted flow is visible in a single expression at line 42.",
+            "rule_id": "AI001",
+            "line": 42,
+            "snippet": "userCookie.setDomain(new java.net.URL(request.getRequestURL().toString()).getHost());",
+            "issue": "Cookie domain derived from request URL, enabling Host header injection to poison cookie scope"
+          },
+          {
+            "cwe_raw": "CWE-15",
+            "cwes": [
+              15
+            ],
+            "severity": "High",
+            "status": "valid",
+            "triaged": true,
+            "triage_reason": "The cookie value is read from the client at line 61, URL-decoded, and used directly as the session attribute key at line 68 with no allowlist, validation, or sanitization between source and sink. An attacker controlling the cookie can set it to any value, overwriting arbitrary session attributes with the fixed value \"10340\".",
+            "rule_id": "AI001",
+            "line": 61,
+            "snippet": "param = java.net.URLDecoder.decode(theCookie.getValue(), \"UTF-8\");\n// ...\nrequest.getSession().setAttribute(param, \"10340\");",
+            "issue": "Untrusted cookie value used as HTTP session attribute name without validation"
           }
         ]
       },
@@ -178,28 +206,28 @@
             "cwes": [
               327
             ],
-            "severity": "Medium",
+            "severity": "High",
             "status": "valid",
             "triaged": true,
-            "triage_reason": "Verdict: The reported use of DES for encryption is confirmed in the servlet code path. Evidence: BenchmarkTest00005.java:63 instantiates Cipher with \"DES/CBC/PKCS5Padding\" and line 66 generates a key via KeyGenerator.getInstance(\"DES\"), with attacker-controlled, URL-decoded header data (lines 44-50) converted to bytes and encrypted (lines 72-74) using these DES primitives; no stronger-algorithm override, guard, or mitigation exists in the method. Gap: none.",
+            "triage_reason": "Concrete evidence clearly shows DES encryption algorithm usage at lines 63 and 66. Cipher.getInstance(\"DES/CBC/PKCS5Padding\") and KeyGenerator.getInstance(\"DES\") both explicitly request the weak DES algorithm, which has a 56-bit key and is cryptographically broken. No wrappers, aliases, or mitigating controls alter the algorithm selection.",
             "rule_id": "AI001",
             "line": 63,
-            "snippet": "javax.crypto.Cipher c = javax.crypto.Cipher.getInstance(\"DES/CBC/PKCS5Padding\");\n\n            // Prepare the cipher to encrypt\n            javax.crypto.SecretKey key = javax.crypto.KeyGenerator.getInstance(\"DES\").generateKey();",
-            "issue": "Use of DES, a weak and broken symmetric encryption algorithm (56-bit keys), to encrypt sensitive data"
+            "snippet": "javax.crypto.Cipher c = javax.crypto.Cipher.getInstance(\"DES/CBC/PKCS5Padding\");\n\n// Prepare the cipher to encrypt\njavax.crypto.SecretKey key = javax.crypto.KeyGenerator.getInstance(\"DES\").generateKey();",
+            "issue": "Use of weak DES encryption algorithm"
           },
           {
             "cwe_raw": "CWE-209",
             "cwes": [
               209
             ],
-            "severity": "Low",
+            "severity": "Medium",
             "status": "valid",
             "triaged": true,
-            "triage_reason": "Verdict: The finding is valid — e.printStackTrace(response.getWriter()) writes the full exception stack trace directly into the HTTP response body. Evidence: The catch block at src/main/java/org/owasp/benchmark/testcode/BenchmarkTest00005.java:109-120 contains line 118 `e.printStackTrace(response.getWriter())`, and the enclosing servlet (line 27 mapping, lines 33-39 doGet/doPost with HttpServletResponse) is an unauthenticated HTTP endpoint with no sanitization or server-side-only logging, so internal class/method/line details are disclosed to the client. Gap: none.",
+            "triage_reason": "The exception handler at line 118 calls e.printStackTrace(response.getWriter()), which writes the full Java stack trace directly to the HttpServletResponse output stream, exposing internal class names, method names, and file paths to the HTTP client.",
             "rule_id": "AI001",
-            "line": 115,
-            "snippet": "response.getWriter()\n                    .println(\n                            \"Problem executing crypto - javax.crypto.Cipher.getInstance(java.lang.String,java.security.Provider) Test Case\");\n            e.printStackTrace(response.getWriter());\n            throw new ServletException(e);",
-            "issue": "Sensitive exception stack trace is written directly to the HTTP response"
+            "line": 118,
+            "snippet": "e.printStackTrace(response.getWriter());",
+            "issue": "Stack trace disclosed in HTTP response body"
           }
         ]
       },
@@ -223,183 +251,16 @@
             "severity": "Critical",
             "status": "valid",
             "triaged": true,
-            "triage_reason": "Verdict: Attacker-controlled HTTP header is URL-decoded and concatenated into a shell command string executed via ProcessBuilder with a shell wrapper, with no sanitization, so OS command injection (CWE-78) is confirmed. Evidence: request.getHeader(\"BenchmarkTest00006\") at line 46 feeds param, which is URL-decoded at line 50 and embedded into the shell command at line 62 (argList.add(\"echo \" + param)) after the sh -c / cmd.exe /c wrapper is added at lines 56-61; the list is passed to ProcessBuilder.command at line 66 and executed at line 69. Gap: none.",
+            "triage_reason": "Untrusted HTTP header value flows unsanitized through URL-decoding into a shell-interpreted command string passed to sh -c / cmd.exe /c, then executed via ProcessBuilder. No validation, escaping, clamping, allowlisting, or reject path exists anywhere in the data flow.",
             "rule_id": "AI001",
             "line": 44,
-            "snippet": "String param = \"\";\n        if (request.getHeader(\"BenchmarkTest00006\") != null) {\n            param = request.getHeader(\"BenchmarkTest00006\");\n        }\n\n        // URL Decode the header value since req.getHeader() doesn't. Unlike req.getParameter().\n        param = java.net.URLDecoder.decode(param, \"UTF-8\");\n\n        java.util.List<String> argList = new java.util.ArrayList<String>();\n\n        String osName = System.getProperty(\"os.name\");\n        if (osName.indexOf(\"Windows\") != -1) {\n            argList.add(\"cmd.exe\");\n            argList.add(\"/c\");\n        } else {\n            argList.add(\"sh\");\n            argList.add(\"-c\");\n        }\n        argList.add(\"echo \" + param);\n\n        ProcessBuilder pb = new ProcessBuilder();\n\n        pb.command(argList);\n\n        try {\n            Process p = pb.start();",
-            "issue": "OS command injection via attacker-controlled HTTP header concatenated into a shell command executed with ProcessBuilder"
+            "snippet": "String param = \"\";\nif (request.getHeader(\"BenchmarkTest00006\") != null) {\n    param = request.getHeader(\"BenchmarkTest00006\");\n}\n\n// URL Decode the header value since req.getHeader() doesn't. Unlike req.getParameter().\nparam = java.net.URLDecoder.decode(param, \"UTF-8\");\n\njava.util.List<String> argList = new java.util.ArrayList<String>();\n\nString osName = System.getProperty(\"os.name\");\nif (osName.indexOf(\"Windows\") != -1) {\n    argList.add(\"cmd.exe\");\n    argList.add(\"/c\");\n} else {\n    argList.add(\"sh\");\n    argList.add(\"-c\");\n}\nargList.add(\"echo \" + param);\n\nProcessBuilder pb = new ProcessBuilder();\n\npb.command(argList);\n\ntry {\n    Process p = pb.start();",
+            "issue": "OS Command Injection via unsanitized HTTP header value passed to shell"
           }
         ]
       },
       "BenchmarkTest00007": {
         "expected": true,
-        "strict": false,
-        "lenient": false,
-        "outcome_strict": "FN",
-        "outcome_lenient": "FN",
-        "on_target": 0,
-        "off_target": 0,
-        "total": 0,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": []
-      },
-      "BenchmarkTest00008": {
-        "expected": true,
-        "strict": true,
-        "lenient": true,
-        "outcome_strict": "TP",
-        "outcome_lenient": "TP",
-        "on_target": 1,
-        "off_target": 0,
-        "total": 1,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": [
-          {
-            "cwe_raw": "CWE-89",
-            "cwes": [
-              89
-            ],
-            "severity": "High",
-            "status": "valid",
-            "triaged": true,
-            "triage_reason": "Verdict: The reported SQL injection is valid — an attacker-controlled HTTP header is URL-decoded, concatenated directly into a stored-procedure call string, and executed via prepareCall/executeQuery with no validation, escaping, or parameterization anywhere in the file. Evidence: doPost reads request.getHeader(\"BenchmarkTest00008\") into param (BenchmarkTest00008.java:45-46), URL-decodes it (BenchmarkTest00008.java:50), builds \"{call \" + param + \"}\" (BenchmarkTest00008.java:52), and passes it to connection.prepareCall(sql) then statement.executeQuery() (BenchmarkTest00008.java:57-58); the servlet is externally reachable via @WebServlet(\"/sqli-00/BenchmarkTest00008\") with doGet delegating to doPost (BenchmarkTest00008.java:27,33-35). Gap: none.",
-            "rule_id": "AI001",
-            "line": 44,
-            "snippet": "String param = \"\";\n        if (request.getHeader(\"BenchmarkTest00008\") != null) {\n            param = request.getHeader(\"BenchmarkTest00008\");\n        }\n\n        // URL Decode the header value since req.getHeader() doesn't. Unlike req.getParameter().\n        param = java.net.URLDecoder.decode(param, \"UTF-8\");\n\n        String sql = \"{call \" + param + \"}\";\n\n        try {\n            java.sql.Connection connection =\n                    org.owasp.benchmark.helpers.DatabaseHelper.getSqlConnection();\n            java.sql.CallableStatement statement = connection.prepareCall(sql);\n            java.sql.ResultSet rs = statement.executeQuery();",
-            "issue": "SQL injection in stored procedure call built from unvalidated HTTP header value"
-          }
-        ]
-      },
-      "BenchmarkTest00009": {
-        "expected": false,
-        "strict": false,
-        "lenient": false,
-        "outcome_strict": "TN",
-        "outcome_lenient": "TN",
-        "on_target": 0,
-        "off_target": 2,
-        "total": 2,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": [
-          {
-            "cwe_raw": "CWE-759",
-            "cwes": [
-              759
-            ],
-            "severity": "Medium",
-            "status": "valid",
-            "triaged": true,
-            "triage_reason": "Verdict: The finding is valid — an attacker-controlled header name is hashed with raw unsalted SHA-384 and written to passwordFile.txt. Evidence: `param` is taken from the first non-standard request header (lines 44-59), converted to bytes (line 74), fed to `md.update(input)` at line 86 where `md` is `MessageDigest.getInstance(\"sha-384\", ...)` (lines 68/70), digested at line 88, and appended to `passwordFile.txt` as `hash_value=<base64>` (lines 89-98); no salt, SecureRandom, or KDF is present anywhere in the flow. Gap: none.",
-            "rule_id": "AI001",
-            "line": 86,
-            "snippet": "md.update(input);\n\n            byte[] result = md.digest();\n            java.io.File fileTarget =\n                    new java.io.File(\n                            new java.io.File(org.owasp.benchmark.helpers.Utils.TESTFILES_DIR),\n                            \"passwordFile.txt\");\n            java.io.FileWriter fw =\n                    new java.io.FileWriter(fileTarget, true); // the true will append the new data\n            fw.write(\n                    \"hash_value=\"\n                            + org.owasp.esapi.ESAPI.encoder().encodeForBase64(result, true)\n                            + \"\\n\");",
-            "issue": "Use of a one-way hash without a salt (CWE-759) to protect sensitive values written to a password file"
-          },
-          {
-            "cwe_raw": "CWE-312",
-            "cwes": [
-              312
-            ],
-            "severity": "Medium",
-            "status": "valid",
-            "triaged": true,
-            "triage_reason": "Verdict: The finding is valid - a client-derived sensitive hash is written unencrypted to a fixed, predictable flat file with default OS permissions. Evidence: BenchmarkTest00009.java:89-92 constructs the File at Utils.TESTFILES_DIR/passwordFile.txt, lines 93-94 open a plain FileWriter in append mode, and lines 95-98 write the base64-encoded hash as plaintext; the hash originates from md.digest() over client-supplied input (lines 86-88), and no encryption, permission restriction, or access control is present anywhere in the code region. Gap: none.",
-            "rule_id": "AI001",
-            "line": 89,
-            "snippet": "java.io.File fileTarget =\n                    new java.io.File(\n                            new java.io.File(org.owasp.benchmark.helpers.Utils.TESTFILES_DIR),\n                            \"passwordFile.txt\");\n            java.io.FileWriter fw =\n                    new java.io.FileWriter(fileTarget, true); // the true will append the new data\n            fw.write(\n                    \"hash_value=\"\n                            + org.owasp.esapi.ESAPI.encoder().encodeForBase64(result, true)\n                            + \"\\n\");\n            fw.close();",
-            "issue": "Insecure storage of sensitive hash data in a predictable, unprotected file"
-          }
-        ]
-      },
-      "BenchmarkTest00010": {
-        "expected": false,
-        "strict": true,
-        "lenient": true,
-        "outcome_strict": "FP",
-        "outcome_lenient": "FP",
-        "on_target": 1,
-        "off_target": 0,
-        "total": 1,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": [
-          {
-            "cwe_raw": "CWE-330",
-            "cwes": [
-              330
-            ],
-            "severity": "High",
-            "status": "valid",
-            "triaged": true,
-            "triage_reason": "Verdict: The finding is valid — the remember-me token is generated from SecureRandom.nextInt(99), limiting the key space to 99 enumerable values and then used as the sole authentication credential. Evidence: BenchmarkTest00010.java:63 generates randNumber via nextInt(99), line 64 converts it to the rememberMeKey string, lines 80-84 authenticate solely by matching the cookie value to the session attribute, and lines 92-99 store that value in the rememberMe cookie and session; no entropy expansion, hashing, expiry, or other mitigation is present. Gap: none.",
-            "rule_id": "AI001",
-            "line": 62,
-            "snippet": "try {\n            int randNumber = java.security.SecureRandom.getInstance(\"SHA1PRNG\").nextInt(99);\n            String rememberMeKey = Integer.toString(randNumber);",
-            "issue": "Weak random remember-me token: SecureRandom.nextInt(99) produces only 99 possible values, making the authentication cookie trivially guessable/brute-forceable."
-          }
-        ]
-      },
-      "BenchmarkTest00011": {
-        "expected": true,
-        "strict": true,
-        "lenient": true,
-        "outcome_strict": "TP",
-        "outcome_lenient": "TP",
-        "on_target": 1,
-        "off_target": 0,
-        "total": 1,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": [
-          {
-            "cwe_raw": "CWE-22",
-            "cwes": [
-              22
-            ],
-            "severity": "Medium",
-            "status": "valid",
-            "triaged": true,
-            "triage_reason": "Verdict: Attacker-controlled, URL-decoded HTTP header value flows unvalidated into a filesystem path construction and is followed by filesystem access. Evidence: request.getHeaders(\"BenchmarkTest00011\") at BenchmarkTest00011.java:45 feeds headers.nextElement() (line 48), is URL-decoded at line 52, then used directly as the parent path in `new java.io.File(param, \"/Test.txt\")` at line 54 with no validation, canonicalization, or base-directory confinement, and the file is probed via fileTarget.exists() at line 64 with the result reflected in the response (lines 62-67); the only sanitizer, ESAPI encodeForHTML at line 62, applies only to HTML output and not to the path. Gap: none.",
-            "rule_id": "AI001",
-            "line": 44,
-            "snippet": "String param = \"\";\n        java.util.Enumeration<String> headers = request.getHeaders(\"BenchmarkTest00011\");\n\n        if (headers != null && headers.hasMoreElements()) {\n            param = headers.nextElement(); // just grab first element\n        }\n\n        // URL Decode the header value since req.getHeaders() doesn't. Unlike req.getParameters().\n        param = java.net.URLDecoder.decode(param, \"UTF-8\");\n\n        java.io.File fileTarget = new java.io.File(param, \"/Test.txt\");",
-            "issue": "Path traversal: attacker-controlled HTTP header value is used to construct a filesystem path for file access"
-          }
-        ]
-      },
-      "BenchmarkTest00012": {
-        "expected": true,
-        "strict": true,
-        "lenient": true,
-        "outcome_strict": "TP",
-        "outcome_lenient": "TP",
-        "on_target": 1,
-        "off_target": 0,
-        "total": 1,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": [
-          {
-            "cwe_raw": "CWE-90",
-            "cwes": [
-              90
-            ],
-            "severity": "High",
-            "status": "valid",
-            "triaged": true,
-            "triage_reason": "Verdict: The finding is valid - a client-controlled HTTP header value is URL-decoded and directly concatenated into an LDAP search filter without any LDAP escaping, then executed via idc.search(). Evidence: param originates from request.getHeaders(\"BenchmarkTest00012\") at line 45-48, is URL-decoded at line 52, concatenated into the filter at line 60, and passed to idc.search(base, filter, filters, sc) at line 68; the only ESAPI encoding (encodeForHTML) at line 100 is for HTML output, not LDAP filter escaping. Gap: none.",
-            "rule_id": "AI001",
-            "line": 60,
-            "snippet": "String filter = \"(&(objectclass=person))(|(uid=\" + param + \")(street={0}))\";\n            Object[] filters = new Object[] {\"The streetz 4 Ms bar\"};\n\n            javax.naming.directory.DirContext ctx = ads.getDirContext();\n            javax.naming.directory.InitialDirContext idc =\n                    (javax.naming.directory.InitialDirContext) ctx;\n            boolean found = false;\n            javax.naming.NamingEnumeration<javax.naming.directory.SearchResult> results =\n                    idc.search(base, filter, filters, sc);",
-            "issue": "LDAP injection via unvalidated HTTP header value concatenated into an LDAP search filter"
-          }
-        ]
-      },
-      "BenchmarkTest00013": {
-        "expected": true,
         "strict": true,
         "lenient": true,
         "outcome_strict": "TP",
@@ -407,90 +268,6 @@
         "on_target": 1,
         "off_target": 1,
         "total": 2,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": [
-          {
-            "cwe_raw": "CWE-79",
-            "cwes": [
-              79
-            ],
-            "severity": "Medium",
-            "status": "valid",
-            "triaged": true,
-            "triage_reason": "Verdict: The Referer header value flows unescaped into an HTML response, confirming reflected XSS. Evidence: In src/main/java/org/owasp/benchmark/testcode/BenchmarkTest00013.java, doPost sets content type text/html (line 42), copies the attacker-controlled Referer header into param (lines 45-48), URL-decodes it (line 52), disables X-XSS-Protection (line 54), and passes param directly as the format string to response.getWriter().format(java.util.Locale.US, param, obj) (line 56) with no HTML encoding, escaping, or sanitization anywhere in the method (file ends at line 58). Gap: none.",
-            "rule_id": "AI001",
-            "line": 44,
-            "snippet": "String param = \"\";\n        java.util.Enumeration<String> headers = request.getHeaders(\"Referer\");\n\n        if (headers != null && headers.hasMoreElements()) {\n            param = headers.nextElement(); // just grab first element\n        }\n\n        // URL Decode the header value since req.getHeaders() doesn't. Unlike req.getParameters().\n        param = java.net.URLDecoder.decode(param, \"UTF-8\");\n\n        response.setHeader(\"X-XSS-Protection\", \"0\");\n        Object[] obj = {\"a\", \"b\"};\n        response.getWriter().format(java.util.Locale.US, param, obj);",
-            "issue": "Reflected Cross-Site Scripting (XSS): attacker-controlled Referer header is URL-decoded and written unescaped into an HTML response"
-          },
-          {
-            "cwe_raw": "CWE-134",
-            "cwes": [
-              134
-            ],
-            "severity": "Medium",
-            "status": "valid",
-            "triaged": true,
-            "triage_reason": "Verdict: The finding is valid — attacker-controlled Referer header data is used directly as a java.util.Formatter format string with no validation, enabling CWE-134 format-string abuse (resource exhaustion/exceptions). Evidence: param is sourced from request.getHeaders(\"Referer\") at src/main/java/org/owasp/benchmark/testcode/BenchmarkTest00013.java:45, assigned at :48, URL-decoded at :52, and then passed as the format string to response.getWriter().format(java.util.Locale.US, param, obj) at :56, with no sanitizer, allowlist, or reject path between source and sink. Gap: none.",
-            "rule_id": "AI001",
-            "line": 56,
-            "snippet": "response.getWriter().format(java.util.Locale.US, param, obj);",
-            "issue": "Externally-controlled format string passed to String.format can cause resource exhaustion (OutOfMemoryError) or unhandled exceptions"
-          }
-        ]
-      },
-      "BenchmarkTest00014": {
-        "expected": true,
-        "strict": true,
-        "lenient": true,
-        "outcome_strict": "TP",
-        "outcome_lenient": "TP",
-        "on_target": 1,
-        "off_target": 1,
-        "total": 2,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": [
-          {
-            "cwe_raw": "CWE-79",
-            "cwes": [
-              79
-            ],
-            "severity": "High",
-            "status": "valid",
-            "triaged": true,
-            "triage_reason": "Verdict: Reflected XSS is valid — the attacker-controlled Referer header is URL-decoded and written unencoded into an HTML response body. Evidence: request.getHeaders(\"Referer\") supplies the taint at BenchmarkTest00014.java:45, param is URL-decoded at :52, content type is set to text/html at :42, and the value is written directly via response.getWriter().format(param, obj) at :56 with no HTML encoding, escaping, or sanitization anywhere in the method (file ends at :58); X-XSS-Protection is additionally disabled at :54. Gap: none.",
-            "rule_id": "AI001",
-            "line": 44,
-            "snippet": "String param = \"\";\n        java.util.Enumeration<String> headers = request.getHeaders(\"Referer\");\n\n        if (headers != null && headers.hasMoreElements()) {\n            param = headers.nextElement(); // just grab first element\n        }\n\n        // URL Decode the header value since req.getHeaders() doesn't. Unlike req.getParameters().\n        param = java.net.URLDecoder.decode(param, \"UTF-8\");\n\n        response.setHeader(\"X-XSS-Protection\", \"0\");\n        Object[] obj = {\"a\", \"b\"};\n        response.getWriter().format(param, obj);",
-            "issue": "Reflected Cross-Site Scripting (XSS) via the Referer header written unencoded into an HTML response"
-          },
-          {
-            "cwe_raw": "CWE-134",
-            "cwes": [
-              134
-            ],
-            "severity": "Medium",
-            "status": "valid",
-            "triaged": true,
-            "triage_reason": "Verdict: Valid — attacker-controlled Referer header is passed as the format string to PrintWriter.format, an externally-controlled format string sink (CWE-134) with no sanitization. Evidence: param originates from request.getHeaders(\"Referer\") at BenchmarkTest00014.java:45, is taken via headers.nextElement() at :48, URL-decoded at :52, and used directly as the first (format) argument of response.getWriter().format(param, obj) at :56; the full file (:1-58) contains no validation, allowlist, escaping, or fixed-format-string guard between source and sink, and URL decoding does not mitigate format specifiers. Gap: none.",
-            "rule_id": "AI001",
-            "line": 56,
-            "snippet": "response.getWriter().format(param, obj);",
-            "issue": "Externally controlled format string passed to String.format"
-          }
-        ]
-      },
-      "BenchmarkTest00015": {
-        "expected": true,
-        "strict": true,
-        "lenient": true,
-        "outcome_strict": "TP",
-        "outcome_lenient": "TP",
-        "on_target": 1,
-        "off_target": 0,
-        "total": 1,
         "dismissed": 0,
         "inconclusive": 0,
         "findings": [
@@ -499,627 +276,28 @@
             "cwes": [
               78
             ],
-            "severity": "High",
-            "status": "valid",
-            "triaged": true,
-            "triage_reason": "Verdict: OS command injection is confirmed — attacker-controlled HTTP header data is URL-decoded and concatenated into a single shell command argument executed via cmd.exe /c or sh -c without any validation or sanitization. Evidence: the 'BenchmarkTest00015' header is read into param with no filtering (BenchmarkTest00015.java:44-49), URL-decoded (line 52), the argList is seeded with shell interpreter flags 'cmd.exe'/'c' or 'sh'/'-c' (lines 56-62), param is concatenated into 'echo ' + param (line 64), and the list is executed via pb.command(argList) followed by pb.start() (lines 66-71), so shell metacharacters in param are interpreted by the shell. Gap: none.",
-            "rule_id": "AI001",
-            "line": 64,
-            "snippet": "argList.add(\"echo \" + param);\n\n        ProcessBuilder pb = new ProcessBuilder();\n\n        pb.command(argList);",
-            "issue": "OS command injection via attacker-controlled HTTP header concatenated into a shell command"
-          }
-        ]
-      },
-      "BenchmarkTest00016": {
-        "expected": false,
-        "strict": false,
-        "lenient": false,
-        "outcome_strict": "TN",
-        "outcome_lenient": "TN",
-        "on_target": 0,
-        "off_target": 0,
-        "total": 0,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": []
-      },
-      "BenchmarkTest00017": {
-        "expected": true,
-        "strict": true,
-        "lenient": true,
-        "outcome_strict": "TP",
-        "outcome_lenient": "TP",
-        "on_target": 1,
-        "off_target": 0,
-        "total": 1,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": [
-          {
-            "cwe_raw": "CWE-78",
-            "cwes": [
-              78
-            ],
-            "severity": "High",
-            "status": "valid",
-            "triaged": true,
-            "triage_reason": "Verdict: The finding is valid — attacker-controlled HTTP header data is URL-decoded and concatenated into a single-string Runtime.exec() call with no validation or sanitization. Evidence: request.getHeaders(\"BenchmarkTest00017\") at line 45 feeds headers.nextElement() at line 48 into param, which is URL-decoded at line 52 and concatenated into r.exec(cmd + param) at line 63; on non-Windows systems cmd stays empty so the raw header value is executed as a command line, and on Windows it is appended to the echo command string. Gap: none.",
-            "rule_id": "AI001",
-            "line": 44,
-            "snippet": "String param = \"\";\n        java.util.Enumeration<String> headers = request.getHeaders(\"BenchmarkTest00017\");\n\n        if (headers != null && headers.hasMoreElements()) {\n            param = headers.nextElement(); // just grab first element\n        }\n\n        // URL Decode the header value since req.getHeaders() doesn't. Unlike req.getParameters().\n        param = java.net.URLDecoder.decode(param, \"UTF-8\");\n\n        String cmd = \"\";\n        String osName = System.getProperty(\"os.name\");\n        if (osName.indexOf(\"Windows\") != -1) {\n            cmd = org.owasp.benchmark.helpers.Utils.getOSCommandString(\"echo\");\n        }\n\n        Runtime r = Runtime.getRuntime();\n\n        try {\n            Process p = r.exec(cmd + param);",
-            "issue": "OS command injection via attacker-controlled HTTP header concatenated into Runtime.exec()"
-          }
-        ]
-      },
-      "BenchmarkTest00018": {
-        "expected": true,
-        "strict": true,
-        "lenient": true,
-        "outcome_strict": "TP",
-        "outcome_lenient": "TP",
-        "on_target": 1,
-        "off_target": 0,
-        "total": 1,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": [
-          {
-            "cwe_raw": "CWE-89",
-            "cwes": [
-              89
-            ],
             "severity": "Critical",
             "status": "valid",
             "triaged": true,
-            "triage_reason": "Verdict: The finding is valid — the attacker-controlled HTTP header is URL-decoded and concatenated into a SQL INSERT string executed via plain Statement.executeUpdate with no validation or parameterization. Evidence: getHeaders at line 45, nextElement at line 48, URLDecoder.decode at line 52, string concatenation at line 54, and executeUpdate(sql) at line 59 all confirm the full taint path. Gap: none.",
+            "triage_reason": "User-controlled HTTP header value flows directly into the environment variable array of Runtime.exec() without any validation, sanitization, or allowlisting.",
             "rule_id": "AI001",
             "line": 44,
-            "snippet": "String param = \"\";\n        java.util.Enumeration<String> headers = request.getHeaders(\"BenchmarkTest00018\");\n\n        if (headers != null && headers.hasMoreElements()) {\n            param = headers.nextElement(); // just grab first element\n        }\n\n        // URL Decode the header value since req.getHeaders() doesn't. Unlike req.getParameters().\n        param = java.net.URLDecoder.decode(param, \"UTF-8\");\n\n        String sql = \"INSERT INTO users (username, password) VALUES ('foo','\" + param + \"')\";\n\n        try {\n            java.sql.Statement statement =\n                    org.owasp.benchmark.helpers.DatabaseHelper.getSqlStatement();\n            int count = statement.executeUpdate(sql);",
-            "issue": "SQL Injection via unparameterized string concatenation of an attacker-controlled HTTP header"
-          }
-        ]
-      },
-      "BenchmarkTest00019": {
-        "expected": true,
-        "strict": true,
-        "lenient": true,
-        "outcome_strict": "TP",
-        "outcome_lenient": "TP",
-        "on_target": 1,
-        "off_target": 1,
-        "total": 2,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": [
-          {
-            "cwe_raw": "CWE-327",
-            "cwes": [
-              327
-            ],
-            "severity": "Medium",
-            "status": "valid",
-            "triaged": true,
-            "triage_reason": "Verdict: The reported use of insecure cryptographic algorithm is supported by concrete code, since the algorithm string defaults to DESede/ECB/PKCS5Padding and is used with a DES key in encryption mode. Evidence: Cipher.getInstance is passed a property value defaulting to DESede/ECB/PKCS5Padding, and the key is generated from DES, then Cipher.init(ENCRYPT_MODE, key) is used to encrypt. Gap: none.",
-            "rule_id": "AI001",
-            "line": 50,
-            "snippet": "String algorithm = benchmarkprops.getProperty(\"cryptoAlg1\", \"DESede/ECB/PKCS5Padding\");\n            javax.crypto.Cipher c = javax.crypto.Cipher.getInstance(algorithm);\n\n            // Prepare the cipher to encrypt\n            javax.crypto.SecretKey key = javax.crypto.KeyGenerator.getInstance(\"DES\").generateKey();\n            c.init(javax.crypto.Cipher.ENCRYPT_MODE, key);",
-            "issue": "Use of insecure cryptographic algorithm: DES with ECB mode for encrypting sensitive data"
+            "snippet": "String param = \"\";\nif (request.getHeader(\"BenchmarkTest00007\") != null) {\n    param = request.getHeader(\"BenchmarkTest00007\");\n}\n\n// URL Decode the header value since req.getHeader() doesn't. Unlike req.getParameter().\nparam = java.net.URLDecoder.decode(param, \"UTF-8\");\n\nString cmd =\n        org.owasp.benchmark.helpers.Utils.getInsecureOSCommandString(\n                this.getClass().getClassLoader());\nString[] args = {cmd};\nString[] argsEnv = {param};\n\nRuntime r = Runtime.getRuntime();\n\ntry {\n    Process p = r.exec(args, argsEnv);",
+            "issue": "OS Command Injection via Runtime.exec with user-controlled environment variables"
           },
           {
-            "cwe_raw": "CWE-209",
+            "cwe_raw": "CWE-20",
             "cwes": [
-              209
-            ],
-            "severity": "Low",
-            "status": "valid",
-            "triaged": true,
-            "triage_reason": "Verdict: The catch block writes the full exception stack trace directly to the HTTP response via e.printStackTrace(response.getWriter()), confirming CWE-209 information disclosure. Evidence: In doPost(HttpServletRequest, HttpServletResponse), the catch block for crypto exceptions at src/main/java/org/owasp/benchmark/testcode/BenchmarkTest00019.java:95-99 calls e.printStackTrace(response.getWriter()) at line 103, where response is the servlet HttpServletResponse (line 39) whose writer is the client response body; no logging, sanitization, or generic-error guard exists on this path. Gap: none.",
-            "rule_id": "AI001",
-            "line": 100,
-            "snippet": "response.getWriter()\n                    .println(\n                            \"Problem executing crypto - javax.crypto.Cipher.getInstance(java.lang.String,java.security.Provider) Test Case\");\n            e.printStackTrace(response.getWriter());\n            throw new ServletException(e);",
-            "issue": "Exception stack trace disclosed to the client in the HTTP response"
-          }
-        ]
-      },
-      "BenchmarkTest00020": {
-        "expected": true,
-        "strict": true,
-        "lenient": true,
-        "outcome_strict": "TP",
-        "outcome_lenient": "TP",
-        "on_target": 1,
-        "off_target": 1,
-        "total": 2,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": [
-          {
-            "cwe_raw": "CWE-327",
-            "cwes": [
-              327
+              20
             ],
             "severity": "High",
             "status": "valid",
             "triaged": true,
-            "triage_reason": "Verdict: The finding is valid; the code explicitly instantiates a DES cipher in CBC mode with PKCS5Padding from the SunJCE provider. Evidence: BenchmarkTest00020.java:59 calls Cipher.getInstance(\"DES/CBC/PKCS5Padding\", \"SunJCE\"), line 61 generates a DES key via KeyGenerator.getInstance(\"DES\"), and lines 55/62-64 supply an 8-byte IV and initialize the cipher in ENCRYPT_MODE, confirming DES's 56-bit effective key is used for the encryption operation. Gap: none.",
-            "rule_id": "AI001",
-            "line": 58,
-            "snippet": "javax.crypto.Cipher c =\n                    javax.crypto.Cipher.getInstance(\"DES/CBC/PKCS5Padding\", \"SunJCE\");\n            // Prepare the cipher to encrypt\n            javax.crypto.SecretKey key = javax.crypto.KeyGenerator.getInstance(\"DES\").generateKey();",
-            "issue": "Use of the broken DES cipher with CBC mode to protect sensitive data (weak cryptographic algorithm)"
-          },
-          {
-            "cwe_raw": "CWE-209",
-            "cwes": [
-              209
-            ],
-            "severity": "Low",
-            "status": "valid",
-            "triaged": true,
-            "triage_reason": "Verdict: The finding is valid — exception stack traces are written directly into the HTTP response body. Evidence: BenchmarkTest00020 extends HttpServlet (line 28) and each catch block in the doPost handler calls e.printStackTrace(response.getWriter()) (lines 108, 114, 120, 126, 132, 138, and subsequent), where response is the HttpServletResponse, so full stack traces (class names, file paths, line numbers) are exposed to the client with no server-side-only logging or generic error path. Gap: none.",
-            "rule_id": "AI001",
-            "line": 104,
-            "snippet": "} catch (java.security.NoSuchAlgorithmException e) {\n            response.getWriter()\n                    .println(\n                            \"Problem executing crypto - javax.crypto.Cipher.getInstance(java.lang.String,java.security.Provider) Test Case\");\n            e.printStackTrace(response.getWriter());\n            throw new ServletException(e);",
-            "issue": "Stack traces are printed to the HTTP response, leaking internal implementation details to clients"
-          }
-        ]
-      },
-      "BenchmarkTest00021": {
-        "expected": true,
-        "strict": true,
-        "lenient": true,
-        "outcome_strict": "TP",
-        "outcome_lenient": "TP",
-        "on_target": 1,
-        "off_target": 0,
-        "total": 1,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": [
-          {
-            "cwe_raw": "CWE-90",
-            "cwes": [
-              90
-            ],
-            "severity": "High",
-            "status": "valid",
-            "triaged": true,
-            "triage_reason": "Verdict: The finding is valid — a user-controlled request parameter is concatenated unescaped into an LDAP search filter and executed via ctx.search(), constituting LDAP injection (CWE-90). Evidence: request.getParameter at BenchmarkTest00021.java:44 is followed only by a null check (line 45), then param is embedded directly into the filter string at line 54 and passed to the LDAP sink ctx.search(base, filter, filters, sc) at line 58; the symbol search shows param appears only at lines 44/45/54 with no validation, encoding, or escaping anywhere in the file (the only ESAPI call, encodeForHTML, is applied to the filter for HTML output at line 90, not to the LDAP query). Gap: none.",
+            "triage_reason": "The HTTP header 'BenchmarkTest00007' is read at line 46 and flows through URL decoding at line 50 into the environment array at line 56, then directly to Runtime.exec() at line 61 with zero input validation — no length check, allowlisting, or sanitization exists between source and sink.",
             "rule_id": "AI001",
             "line": 44,
-            "snippet": "String param = request.getParameter(\"BenchmarkTest00021\");\n        if (param == null) param = \"\";",
-            "issue": "LDAP injection via unsanitized request parameter concatenated into LDAP search filter"
-          }
-        ]
-      },
-      "BenchmarkTest00022": {
-        "expected": false,
-        "strict": false,
-        "lenient": false,
-        "outcome_strict": "TN",
-        "outcome_lenient": "TN",
-        "on_target": 0,
-        "off_target": 0,
-        "total": 0,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": []
-      },
-      "BenchmarkTest00023": {
-        "expected": true,
-        "strict": true,
-        "lenient": true,
-        "outcome_strict": "TP",
-        "outcome_lenient": "TP",
-        "on_target": 1,
-        "off_target": 1,
-        "total": 2,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": [
-          {
-            "cwe_raw": "CWE-338",
-            "cwes": [
-              338
-            ],
-            "severity": "High",
-            "status": "valid",
-            "triaged": true,
-            "triage_reason": "Verdict: The finding is valid — a remember-me authentication token is generated with the cryptographically weak java.util.Random and used to grant an authenticated state. Evidence: Line 47 creates `new java.util.Random().nextFloat()`, line 48 derives `rememberMeKey` from that float, line 57 names the cookie `rememberMe...`, lines 64-67 authenticate by comparing the incoming cookie value to the session attribute, lines 72-73 grant the 'Welcome back' authenticated state, and lines 75-83 store the token in the cookie and session. Gap: none.",
-            "rule_id": "AI001",
-            "line": 47,
-            "snippet": "float rand = new java.util.Random().nextFloat();\n        String rememberMeKey = Float.toString(rand).substring(2); // Trim off the 0. at the front.",
-            "issue": "Use of cryptographically weak pseudo-random number generator (java.util.Random) to generate a remember-me authentication token"
-          },
-          {
-            "cwe_raw": "CWE-15",
-            "cwes": [
-              15
-            ],
-            "severity": "Medium",
-            "status": "valid",
-            "triaged": true,
-            "triage_reason": "Verdict: The cookie Domain attribute is set directly from the request URL's host, which is reconstructed from the client-supplied Host header, with no allowlist or validation. Evidence: BenchmarkTest00023.java:79 passes `new java.net.URL(request.getRequestURL().toString()).getHost()` to `rememberMe.setDomain(...)`, and the enclosing doPost (lines 39-90) contains no Host validation, canonicalization, or allowlist guard. Gap: none.",
-            "rule_id": "AI001",
-            "line": 79,
-            "snippet": "rememberMe.setDomain(new java.net.URL(request.getRequestURL().toString()).getHost());",
-            "issue": "Cookie Domain attribute is derived from the attacker-controllable Host header"
-          }
-        ]
-      },
-      "BenchmarkTest00024": {
-        "expected": true,
-        "strict": true,
-        "lenient": true,
-        "outcome_strict": "TP",
-        "outcome_lenient": "TP",
-        "on_target": 1,
-        "off_target": 0,
-        "total": 1,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": [
-          {
-            "cwe_raw": "CWE-89",
-            "cwes": [
-              89
-            ],
-            "severity": "High",
-            "status": "valid",
-            "triaged": true,
-            "triage_reason": "Verdict: SQL injection is valid — the raw request parameter is concatenated into the SQL text and executed via PreparedStatement without binding the attacker-controlled fragment. Evidence: request.getParameter at src/main/java/org/owasp/benchmark/testcode/BenchmarkTest00024.java:44 feeds directly into string concatenation at line 47, which is passed to connection.prepareStatement at lines 52-54 and executed at line 59, while only the USERNAME placeholder is bound (setString(1, \"foo\") at line 58); the sole guard is a null check (line 45) with no sanitization. Gap: none.",
-            "rule_id": "AI001",
-            "line": 44,
-            "snippet": "String param = request.getParameter(\"BenchmarkTest00024\");\n        if (param == null) param = \"\";\n\n        String sql = \"SELECT * from USERS where USERNAME=? and PASSWORD='\" + param + \"'\";\n\n        try {\n            java.sql.Connection connection =\n                    org.owasp.benchmark.helpers.DatabaseHelper.getSqlConnection();\n            java.sql.PreparedStatement statement =\n                    connection.prepareStatement(\n                            sql,",
-            "issue": "SQL injection via unsanitized request parameter concatenated into SQL query"
-          }
-        ]
-      },
-      "BenchmarkTest00025": {
-        "expected": true,
-        "strict": true,
-        "lenient": true,
-        "outcome_strict": "TP",
-        "outcome_lenient": "TP",
-        "on_target": 1,
-        "off_target": 0,
-        "total": 1,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": [
-          {
-            "cwe_raw": "CWE-89",
-            "cwes": [
-              89
-            ],
-            "severity": "High",
-            "status": "valid",
-            "triaged": true,
-            "triage_reason": "Verdict: SQL injection is confirmed — attacker-controlled request parameter is concatenated unescaped into a SQL string and executed via Spring JdbcTemplate. Evidence: request.getParameter at BenchmarkTest00025.java:44 is only null-checked (line 45) then directly concatenated into the SQL literal at line 47, and the resulting string is passed to JDBCtemplate.queryForObject(sql, Long.class) at lines 52-53, where JDBCtemplate is Spring's org.springframework.jdbc.core.JdbcTemplate (DatabaseHelper.java:37, initialized at line 58); no sanitization, escaping, allowlist, or parameterized API is present. Gap: none.",
-            "rule_id": "AI001",
-            "line": 44,
-            "snippet": "String param = request.getParameter(\"BenchmarkTest00025\");\n        if (param == null) param = \"\";\n\n        String sql = \"SELECT userid from USERS where USERNAME='foo' and PASSWORD='\" + param + \"'\";\n        try {\n            // Long results =\n            // org.owasp.benchmark.helpers.DatabaseHelper.JDBCtemplate.queryForLong(sql);\n            Long results =\n                    org.owasp.benchmark.helpers.DatabaseHelper.JDBCtemplate.queryForObject(\n                            sql, Long.class);",
-            "issue": "SQL injection via unvalidated request parameter concatenated into a SQL query"
-          }
-        ]
-      },
-      "BenchmarkTest00026": {
-        "expected": true,
-        "strict": true,
-        "lenient": true,
-        "outcome_strict": "TP",
-        "outcome_lenient": "TP",
-        "on_target": 1,
-        "off_target": 0,
-        "total": 1,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": [
-          {
-            "cwe_raw": "CWE-89",
-            "cwes": [
-              89
-            ],
-            "severity": "Critical",
-            "status": "valid",
-            "triaged": true,
-            "triage_reason": "Verdict: The reported SQL injection is valid — the unvalidated request parameter is concatenated directly into a SQL string and executed. Evidence: request.getParameter at BenchmarkTest00026.java:44 feeds param with only a null check at line 45 into string concatenation at line 47, and the resulting sql is passed to JDBCtemplate.queryForRowSet(sql) at line 50 with no parameterization, validation, or escaping; the later ESAPI encodeForHTML at line 67 only sanitizes HTML output, not the query. Gap: none.",
-            "rule_id": "AI001",
-            "line": 44,
-            "snippet": "String param = request.getParameter(\"BenchmarkTest00026\");\n        if (param == null) param = \"\";\n\n        String sql = \"SELECT  * from USERS where USERNAME='foo' and PASSWORD='\" + param + \"'\";\n        try {\n            org.springframework.jdbc.support.rowset.SqlRowSet results =\n                    org.owasp.benchmark.helpers.DatabaseHelper.JDBCtemplate.queryForRowSet(sql);",
-            "issue": "SQL injection via unvalidated request parameter concatenated into SQL query"
-          }
-        ]
-      },
-      "BenchmarkTest00027": {
-        "expected": true,
-        "strict": true,
-        "lenient": true,
-        "outcome_strict": "TP",
-        "outcome_lenient": "TP",
-        "on_target": 1,
-        "off_target": 0,
-        "total": 1,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": [
-          {
-            "cwe_raw": "CWE-89",
-            "cwes": [
-              89
-            ],
-            "severity": "High",
-            "status": "valid",
-            "triaged": true,
-            "triage_reason": "Verdict: The request parameter is unsanitized and concatenated directly into an SQL string executed via Statement.executeUpdate, so the SQL injection finding is valid. Evidence: request.getParameter returns attacker-controlled input (BenchmarkTest00027.java:44), only a null check follows (line 45), the value is concatenated into an INSERT statement (line 47), and the raw string is executed via statement.executeUpdate(sql) (line 52) where getSqlStatement() returns a plain java.sql.Statement (DatabaseHelper.java:119). Gap: none.",
-            "rule_id": "AI001",
-            "line": 44,
-            "snippet": "String param = request.getParameter(\"BenchmarkTest00027\");\n        if (param == null) param = \"\";\n\n        String sql = \"INSERT INTO users (username, password) VALUES ('foo','\" + param + \"')\";\n\n        try {\n            java.sql.Statement statement =\n                    org.owasp.benchmark.helpers.DatabaseHelper.getSqlStatement();\n            int count = statement.executeUpdate(sql);",
-            "issue": "SQL injection via unsanitized request parameter concatenated into an SQL INSERT statement"
-          }
-        ]
-      },
-      "BenchmarkTest00028": {
-        "expected": true,
-        "strict": true,
-        "lenient": true,
-        "outcome_strict": "TP",
-        "outcome_lenient": "TP",
-        "on_target": 1,
-        "off_target": 0,
-        "total": 1,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": [
-          {
-            "cwe_raw": "CWE-22",
-            "cwes": [
-              22
-            ],
-            "severity": "High",
-            "status": "valid",
-            "triaged": true,
-            "triage_reason": "Verdict: Unsanitized HTTP parameter is concatenated into a filesystem path and passed to FileOutputStream, enabling path traversal/arbitrary file write. Evidence: request.getParameterMap() at BenchmarkTest00028.java:44 feeds the raw 'BenchmarkTest00028' value (lines 47-48) directly into fileName = TESTFILES_DIR + param at line 55, which is passed to new java.io.FileOutputStream(fileName, false) at line 57 with no validation, canonicalization, or sanitization anywhere in the method (lines 44-57), and the servlet is externally reachable via @WebServlet mapping at line 27. Gap: none.",
-            "rule_id": "AI001",
-            "line": 44,
-            "snippet": "java.util.Map<String, String[]> map = request.getParameterMap();\n        String param = \"\";\n        if (!map.isEmpty()) {\n            String[] values = map.get(\"BenchmarkTest00028\");\n            if (values != null) param = values[0];\n        }\n\n        String fileName = null;\n        java.io.FileOutputStream fos = null;\n\n        try {\n            fileName = org.owasp.benchmark.helpers.Utils.TESTFILES_DIR + param;\n\n            fos = new java.io.FileOutputStream(fileName, false);",
-            "issue": "Path traversal allowing arbitrary file write via unsanitized HTTP request parameter (CWE-22)"
-          }
-        ]
-      },
-      "BenchmarkTest00029": {
-        "expected": true,
-        "strict": false,
-        "lenient": false,
-        "outcome_strict": "FN",
-        "outcome_lenient": "FN",
-        "on_target": 0,
-        "off_target": 0,
-        "total": 0,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": []
-      },
-      "BenchmarkTest00030": {
-        "expected": true,
-        "strict": true,
-        "lenient": true,
-        "outcome_strict": "TP",
-        "outcome_lenient": "TP",
-        "on_target": 1,
-        "off_target": 1,
-        "total": 2,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": [
-          {
-            "cwe_raw": "CWE-79",
-            "cwes": [
-              79
-            ],
-            "severity": "High",
-            "status": "valid",
-            "triaged": true,
-            "triage_reason": "Verdict: Valid reflected XSS because attacker-controlled parameter is written as a printf format string to an HTML response with no encoding. Evidence: request value extracted at lines 44-48, response set to text/html at line 42, XSS auditor disabled at line 51, and sink response.getWriter().printf(param, obj) at line 53. Gap: none.",
-            "rule_id": "AI001",
-            "line": 44,
-            "snippet": "java.util.Map<String, String[]> map = request.getParameterMap();\n        String param = \"\";\n        if (!map.isEmpty()) {\n            String[] values = map.get(\"BenchmarkTest00030\");\n            if (values != null) param = values[0];\n        }\n\n        response.setHeader(\"X-XSS-Protection\", \"0\");\n        Object[] obj = {\"a\", \"b\"};\n        response.getWriter().printf(param, obj);",
-            "issue": "Reflected Cross-Site Scripting (XSS): unencoded, attacker-controlled request parameter is written directly into an HTML response."
-          },
-          {
-            "cwe_raw": "CWE-134",
-            "cwes": [
-              134
-            ],
-            "severity": "Medium",
-            "status": "valid",
-            "triaged": true,
-            "triage_reason": "Verdict: Attacker-controlled request data reaches the format-string position of PrintWriter.printf with no validation, constant format, or exception handling, so the uncontrolled format string finding is valid. Evidence: doPost reads the request parameter map at BenchmarkTest00030.java:44, assigns values[0] to param at line 48, and passes param as the format string to response.getWriter().printf(param, obj) at line 53 with no sanitizer, allowlist, or try/catch in between (lines 45-53). Gap: none.",
-            "rule_id": "AI001",
-            "line": 53,
-            "snippet": "response.getWriter().printf(param, obj);",
-            "issue": "Uncontrolled format string: attacker-controlled request parameter is used as the format string in printf, enabling denial of service and information disclosure."
-          }
-        ]
-      },
-      "BenchmarkTest00031": {
-        "expected": true,
-        "strict": true,
-        "lenient": true,
-        "outcome_strict": "TP",
-        "outcome_lenient": "TP",
-        "on_target": 1,
-        "off_target": 0,
-        "total": 1,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": [
-          {
-            "cwe_raw": "CWE-501",
-            "cwes": [
-              501
-            ],
-            "severity": "Medium",
-            "status": "valid",
-            "triaged": true,
-            "triage_reason": "Verdict: The finding is valid — raw client-controlled HTTP parameter data is stored into the HTTP session without any validation or sanitization. Evidence: request.getParameterMap() at line 44 feeds values[0] into param (lines 47-48, only null/empty guards), and request.getSession().putValue(\"userid\", param) at line 52 persists the unvalidated value across the trust boundary; encodeForHTML is applied only to the response output at line 57, after storage. Gap: none.",
-            "rule_id": "AI001",
-            "line": 44,
-            "snippet": "java.util.Map<String, String[]> map = request.getParameterMap();\n        String param = \"\";\n        if (!map.isEmpty()) {\n            String[] values = map.get(\"BenchmarkTest00031\");\n            if (values != null) param = values[0];\n        }\n\n        // javax.servlet.http.HttpSession.putValue(java.lang.String,java.lang.Object^)\n        request.getSession().putValue(\"userid\", param);",
-            "issue": "Trust boundary violation: unvalidated client-controlled HTTP parameter is stored into the HTTP session without any sanitization or validation"
-          }
-        ]
-      },
-      "BenchmarkTest00032": {
-        "expected": true,
-        "strict": true,
-        "lenient": true,
-        "outcome_strict": "TP",
-        "outcome_lenient": "TP",
-        "on_target": 1,
-        "off_target": 0,
-        "total": 1,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": [
-          {
-            "cwe_raw": "CWE-89",
-            "cwes": [
-              89
-            ],
-            "severity": "High",
-            "status": "valid",
-            "triaged": true,
-            "triage_reason": "Verdict: The SQL injection finding is valid — user-controlled request parameter is concatenated into a SQL string and executed. Evidence: request.getParameterMap() yields unvalidated param (line 44-48), which is concatenated into the SQL query at line 52 and passed to JDBCtemplate.execute(sql) at line 54. Gap: none; no validation, sanitization, or parameterized API is used.",
-            "rule_id": "AI001",
-            "line": 52,
-            "snippet": "String sql = \"SELECT * from USERS where USERNAME='foo' and PASSWORD='\" + param + \"'\";\n\norg.owasp.benchmark.helpers.DatabaseHelper.JDBCtemplate.execute(sql);",
-            "issue": "SQL injection via string concatenation of user-controlled request parameter into a JDBC query"
-          }
-        ]
-      },
-      "BenchmarkTest00033": {
-        "expected": true,
-        "strict": true,
-        "lenient": true,
-        "outcome_strict": "TP",
-        "outcome_lenient": "TP",
-        "on_target": 1,
-        "off_target": 0,
-        "total": 1,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": [
-          {
-            "cwe_raw": "CWE-89",
-            "cwes": [
-              89
-            ],
-            "severity": "High",
-            "status": "valid",
-            "triaged": true,
-            "triage_reason": "Verdict: SQL injection is present — the HTTP parameter is concatenated into a SQL string and executed without parameterization or sanitization. Evidence: request parameter `BenchmarkTest00033` is read into `param` at lines 44-48, concatenated into `sql` at line 51, and passed directly to `JDBCtemplate.queryForRowSet(sql)` at line 54 with no validation, escaping, or prepared-statement usage; the only sanitizer in the method (`ESAPI.encoder().encodeForHTML(sql)`, line 71) applies to the error-display output, not the query execution. Gap: none.",
-            "rule_id": "AI001",
-            "line": 51,
-            "snippet": "String sql = \"SELECT  * from USERS where USERNAME='foo' and PASSWORD='\" + param + \"'\";\n        try {\n            org.springframework.jdbc.support.rowset.SqlRowSet results =\n                    org.owasp.benchmark.helpers.DatabaseHelper.JDBCtemplate.queryForRowSet(sql);",
-            "issue": "SQL Injection via unsanitized HTTP request parameter concatenated into SQL query"
-          }
-        ]
-      },
-      "BenchmarkTest00034": {
-        "expected": true,
-        "strict": true,
-        "lenient": true,
-        "outcome_strict": "TP",
-        "outcome_lenient": "TP",
-        "on_target": 1,
-        "off_target": 0,
-        "total": 1,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": [
-          {
-            "cwe_raw": "CWE-89",
-            "cwes": [
-              89
-            ],
-            "severity": "High",
-            "status": "valid",
-            "triaged": true,
-            "triage_reason": "Verdict: Valid SQL injection — client-controlled parameter is concatenated into a SQL string and executed via a raw java.sql.Statement with no parameterization, escaping, or validation. Evidence: request.getParameterMap() at BenchmarkTest00034.java:44 supplies param at :47-48, which is interpolated into the SQL literal at :51, then executed through statement.execute(sql, ...) at :56 with results echoed via printResults at :57; the servlet is mapped at :27 and doGet delegates to doPost at :33-36, with no sanitizer anywhere between source and sink. Gap: none.",
-            "rule_id": "AI001",
-            "line": 44,
-            "snippet": "java.util.Map<String, String[]> map = request.getParameterMap();\n        String param = \"\";\n        if (!map.isEmpty()) {\n            String[] values = map.get(\"BenchmarkTest00034\");\n            if (values != null) param = values[0];\n        }\n\n        String sql = \"SELECT * from USERS where USERNAME='foo' and PASSWORD='\" + param + \"'\";\n\n        try {\n            java.sql.Statement statement =\n                    org.owasp.benchmark.helpers.DatabaseHelper.getSqlStatement();\n            statement.execute(sql, java.sql.Statement.RETURN_GENERATED_KEYS);\n            org.owasp.benchmark.helpers.DatabaseHelper.printResults(statement, sql, response);",
-            "issue": "SQL injection via unsanitized HTTP request parameter concatenated into SQL query"
-          }
-        ]
-      },
-      "BenchmarkTest00035": {
-        "expected": true,
-        "strict": true,
-        "lenient": true,
-        "outcome_strict": "TP",
-        "outcome_lenient": "TP",
-        "on_target": 1,
-        "off_target": 1,
-        "total": 2,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": [
-          {
-            "cwe_raw": "CWE-327",
-            "cwes": [
-              327
-            ],
-            "severity": "Medium",
-            "status": "valid",
-            "triaged": true,
-            "triage_reason": "Verdict: Valid; the servlet instantiates a Cipher with a DES-family transformation in ECB mode and initializes it with a 56-bit DES key, with no stronger algorithm selection or validation anywhere in the encryption path. Evidence: line 65 reads the algorithm with weak default \"DESede/ECB/PKCS5Padding\", line 66 feeds it to Cipher.getInstance, line 69 unconditionally generates a \"DES\" key, line 70 initializes the cipher in ENCRYPT_MODE, and src/main/resources/benchmark.properties:2 sets cryptoAlg1=DES/ECB/PKCS5Padding so the runtime transformation is plain DES/ECB. Gap: none.",
-            "rule_id": "AI001",
-            "line": 65,
-            "snippet": "String algorithm = benchmarkprops.getProperty(\"cryptoAlg1\", \"DESede/ECB/PKCS5Padding\");\n            javax.crypto.Cipher c = javax.crypto.Cipher.getInstance(algorithm);\n\n            // Prepare the cipher to encrypt\n            javax.crypto.SecretKey key = javax.crypto.KeyGenerator.getInstance(\"DES\").generateKey();\n            c.init(javax.crypto.Cipher.ENCRYPT_MODE, key);",
-            "issue": "Use of weak/insecure cryptographic algorithm (DES and ECB mode) for encrypting sensitive data"
-          },
-          {
-            "cwe_raw": "CWE-209",
-            "cwes": [
-              209
-            ],
-            "severity": "Low",
-            "status": "valid",
-            "triaged": true,
-            "triage_reason": "Verdict: The finding is valid — the catch block writes the exception stack trace directly to the HTTP client response. Evidence: In doPost(HttpServletRequest, HttpServletResponse) at BenchmarkTest00035.java:39, the catch block at lines 114-118 calls e.printStackTrace(response.getWriter()) at line 118, where response is the HttpServletResponse whose writer streams content back to the remote client, disclosing class names, package structure, line numbers, and library internals (CWE-209). Gap: none.",
-            "rule_id": "AI001",
-            "line": 115,
-            "snippet": "response.getWriter()\n                    .println(\n                            \"Problem executing crypto - javax.crypto.Cipher.getInstance(java.lang.String,java.security.Provider) Test Case\");\n            e.printStackTrace(response.getWriter());\n            throw new ServletException(e);",
-            "issue": "Sensitive stack trace exposed to the client in error response"
-          }
-        ]
-      },
-      "BenchmarkTest00036": {
-        "expected": true,
-        "strict": true,
-        "lenient": true,
-        "outcome_strict": "TP",
-        "outcome_lenient": "TP",
-        "on_target": 1,
-        "off_target": 0,
-        "total": 1,
-        "dismissed": 0,
-        "inconclusive": 0,
-        "findings": [
-          {
-            "cwe_raw": "CWE-79",
-            "cwes": [
-              79
-            ],
-            "severity": "High",
-            "status": "valid",
-            "triaged": true,
-            "triage_reason": "Verdict: The finding is valid — the attacker-controlled request parameter name is written unencoded into an HTML response with the browser XSS filter disabled. Evidence: response.setContentType(\"text/html;charset=UTF-8\") at line 42, parameter name captured into `param` at line 54 when any value equals \"BenchmarkTest00036\", X-XSS-Protection set to 0 at line 61, and `param` written directly via response.getWriter().write(...) at line 65 with no encoding, sanitization, validation, or CSP anywhere in the method (whole-file inspection lines 1-68 shows no encoder or allowlist). Gap: none.",
-            "rule_id": "AI001",
-            "line": 61,
-            "snippet": "response.setHeader(\"X-XSS-Protection\", \"0\");\n        int length = 1;\n        if (param != null) {\n            length = param.length();\n            response.getWriter().write(param.toCharArray(), 0, length);\n        }",
-            "issue": "Reflected Cross-Site Scripting (XSS): attacker-controlled HTTP parameter name is written to an HTML response without encoding, and the browser XSS filter is disabled."
+            "snippet": "String param = \"\";\nif (request.getHeader(\"BenchmarkTest00007\") != null) {\n    param = request.getHeader(\"BenchmarkTest00007\");\n}\n\n// URL Decode the header value since req.getHeader() doesn't. Unlike req.getParameter().\nparam = java.net.URLDecoder.decode(param, \"UTF-8\");",
+            "issue": "Missing input validation on HTTP header used in security-sensitive operation"
           }
         ]
       }

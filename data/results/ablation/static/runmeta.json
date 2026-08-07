@@ -1,10 +1,10 @@
 {
   "signature": {
     "metis_version": "1.5.0",
-    "metis_git": "59dff7c",
+    "metis_git": "5ae0d99",
     "semgrep_version": "1.171.0",
     "normalizer_version": 2,
-    "scan_model": "deepseek-v4-flash",
+    "scan_model": "deepseek-v4-pro",
     "base_url": "https://opencode.ai/zen/go/v1",
     "engine": "semgrep+metis",
     "tools": "navigation",
@@ -13,7 +13,7 @@
     "semgrep_rulesets": [
       "p/java",
       "p/owasp-top-ten",
-      "/Users/trinhthilananh/Desktop/Personal/vinsoc/week2/scan_benchmarkjava/rules/benchmarkjava"
+      "/Users/trinhthilananh/Desktop/Personal/vinsoc/week2/scan_benchmarkjava/data/rules/benchmarkjava"
     ],
     "base_engine": {
       "max_token_length": 250000,
@@ -27,23 +27,23 @@
         "max_rounds": 6
       }
     },
-    "tests_digest": "6b2d0b53d2445d41"
+    "tests_digest": "603290a6e2b441e1"
   },
-  "wall_clock_seconds": 186.92,
-  "semgrep_seconds": 4.53,
+  "wall_clock_seconds": 128.4,
+  "semgrep_seconds": 3.3,
   "usage": {
-    "input_tokens": 692314,
-    "output_tokens": 69045,
-    "total_tokens": 761359,
-    "duration_seconds": 184.99
+    "input_tokens": 176166,
+    "output_tokens": 13064,
+    "total_tokens": 189230,
+    "duration_seconds": 126.49
   },
   "semgrep_stats": {
-    "results": 39,
-    "with_cwe": 39,
+    "results": 9,
+    "with_cwe": 9,
     "results_without_cwe": 0,
     "rule_unknown": 0,
     "rules_without_cwe": [],
     "rules_unknown": []
   },
-  "ran_at": "2026-07-31T03:25:51.170830+00:00"
+  "ran_at": "2026-08-07T02:44:17.590279+00:00"
 }

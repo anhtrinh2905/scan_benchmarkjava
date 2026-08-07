@@ -7,15 +7,20 @@ reports what an anonymous visitor actually gets.
 
 Updated when Run Scan was removed from the read-only nav. Two things moved with it:
 
-* **Results is now the landing page**, so it is probed at `/` rather than `/results`.
-  Streamlit serves the default page at `/` and ignores its `url_path`, so on the deploy
-  `/results` is the one URL that does not resolve — by design, and nothing published
-  points at it. `/security-report` is the link README and the week-3 report hand out, so
-  it is probed by name here to keep that promise under test.
-* **Section 4 inverts.** It used to assert the Run Scan page refuses; there is no Run Scan
+* **The landing page is probed at `/`.** Streamlit serves the default page at `/` and
+  ignores its `url_path`, so exactly one page cannot be linked to by name — by design, and
+  nothing published points at the name it loses.
+* **Section 5 inverts.** It used to assert the Run Scan page refuses; there is no Run Scan
   page on the deploy now, so it asserts the page and its controls are absent entirely.
   What keeps the instance safe is still `scan_runner`'s refusal to spawn, not the missing
   nav entry — this section checks the nav, and the seam has its own guard.
+
+Updated again for C-021, which reorganized the nav. **Security Report is now the default
+page**, so it is what `/` serves and `/security-report` is the URL that no longer resolves.
+That is a real, chosen cost: the published deep link moved to the site root, in README and
+in the week-3 report, and section 2 below probes the root for report markers rather than
+scorecard ones. Results was renamed **Comparison** and now answers at `/comparison`, which
+section 3 checks — a rename that leaves a dead nav entry is worse than no rename.
 """
 import sys
 
@@ -72,30 +77,60 @@ def main() -> int:
         if pw_inputs:
             failures.append("a password input exists in the DOM")
 
-        print("\n=== 2. The landing page IS Results, with real data ===")
+        print("\n=== 2. The landing page IS the Security Report, on its Hỏi đáp tab ===")
+        # The root is the published link now, so what it serves is the promise under test.
+        # `Danh sách phát hiện` is on this list deliberately: it is the heading that proves
+        # the findings list came along into the Q&A tab instead of staying a third tab.
+        for marker in ("Security Report", "Hỏi đáp", "Danh sách phát hiện"):
+            hit = wait_for_text(page, marker)
+            print(f"  {marker!r:22} on landing : {'yes' if hit else 'NO <-- BAD'}")
+            if not hit:
+                failures.append(f"landing page missing {marker!r}")
+
+        tabs = [
+            page.get_by_role("tab").nth(i).inner_text()
+            for i in range(page.get_by_role("tab").count())
+        ]
+        print(f"  tab order                     : {tabs}")
+        if tabs[:2] != ["Hỏi đáp", "Tổng quan"]:
+            failures.append(f"tab order is {tabs}, expected Hỏi đáp then Tổng quan")
+        selected = page.get_by_role("tab").nth(0).get_attribute("aria-selected")
+        print(f"  'Hỏi đáp' selected on open    : {selected}")
+        if selected != "true":
+            failures.append("Hỏi đáp is not the tab a visitor lands on")
+
+        # A suggested question is prebaked, so it must answer without a model round trip —
+        # which is also the only way this assertion can pass on an instance with no key.
+        suggestion = page.get_by_role("button", name="Thống kê theo CWE, loại lỗi nào nhiều nhất?")
+        if suggestion.count():
+            suggestion.first.click()
+            instant = wait_for_text(page, "Trả lời dựng sẵn", 30_000)
+            print(f"  prebaked answer served        : {'yes' if instant else 'NO <-- BAD'}")
+            if not instant:
+                failures.append("a suggested question did not serve its prebaked answer")
+            for stat in ("token", "mô hình"):
+                if stat not in body(page):
+                    failures.append(f"answer does not report {stat!r}")
+        else:
+            failures.append("no suggested-question buttons rendered")
+        page.screenshot(path=f"{SHOTS}_2_security_report.png", full_page=True)
+
+        print("\n=== 3. /comparison resolves under its new name, with real data ===")
+        page.goto(f"{URL}/comparison", wait_until="networkidle", timeout=90_000)
+        page.wait_for_timeout(9_000)
         # Structural markers, not a model name. The old check looked for 'deepseek', which
         # really asserted which run the page preselects — and that changes: a redeploy
         # rewrites file mtimes, so the run at the top of the list is not stable across
         # builds. A scorecard with a precision table in it is what "real data" means, on
         # whichever run got picked.
-        for marker in ("scorecard", "precision", "recall"):
+        for marker in ("Comparison", "scorecard", "precision", "recall"):
             hit = wait_for_text(page, marker)
-            print(f"  {marker!r:14} on landing     : {'yes' if hit else 'NO <-- BAD'}")
+            print(f"  {marker!r:14} at /comparison : {'yes' if hit else 'NO <-- BAD'}")
             if not hit:
-                failures.append(f"landing page missing {marker!r}")
-
-        print("\n=== 3. /security-report resolves by name (README hands out this link) ===")
-        page.goto(f"{URL}/security-report", wait_until="networkidle", timeout=90_000)
-        page.wait_for_timeout(9_000)
-        for marker in ("Security Report", "Tổng quan", "Ma trận"):
-            hit = wait_for_text(page, marker)
-            print(f"  {marker!r:16} present       : {'yes' if hit else 'NO <-- BAD'}")
-            if not hit:
-                failures.append(f"Security Report missing {marker!r}")
-        report = body(page)
-        page.screenshot(path=f"{SHOTS}_3_security_report.png", full_page=True)
-        if "page not found" in report.lower():
-            failures.append("/security-report 404'd — the published deep link is dead")
+                failures.append(f"/comparison missing {marker!r}")
+        page.screenshot(path=f"{SHOTS}_3_comparison.png", full_page=True)
+        if "page not found" in body(page).lower():
+            failures.append("/comparison 404'd — the renamed page has no URL")
 
         print("\n=== 4. Knowledge Base answers a real query, anonymous ===")
         page.goto(f"{URL}/knowledge-base", wait_until="networkidle", timeout=90_000)

@@ -20,12 +20,27 @@ to `report_query.route_keywords()`; a narration failure falls back to
 a degraded answer is labelled on screen rather than passing for a model answer. With no
 credentials at all — the permanent state of the deployed instance (ADR 19) — both
 fallbacks engage and the page still answers, just more plainly.
+
+**A third path, added later: prebaked.** The suggested-question buttons are a fixed, short
+list, and making a visitor wait ~20s for prose the same model already wrote yesterday buys
+nothing. `scripts/bake_chat.py` runs each suggested question once against the real model and
+records the prose it produced *together with the model id, the tokens it cost, and how long
+it took*; `prebaked_answer()` serves that back instantly. Two rules keep this from becoming
+a lie on the page:
+
+* **Only the prose is cached.** The query still runs through `report_query` on every serve,
+  so the table, the chart and the finding list are computed now, from the report on disk.
+* **A stale cache is not served.** The bake records a fingerprint of the report it was baked
+  against, and the recomputed numbers are re-checked against the cached prose by the same
+  `_unsupported_numbers()` gate a live narration passes. Either check failing drops the turn
+  back to the live path rather than showing prose that no longer matches its own table.
 """
 from __future__ import annotations
 
 import json
 import os
 import re
+import time
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -45,11 +60,13 @@ from security_agent import (
 
 CHAT_PROMPT_PATH = ROOT / "src" / "prompts" / "report_chat.md"
 
+CHAT_CACHE_PATH = ROOT / "data" / "analysis" / "chat_cache.json"
+
 ROUTER_HEADING = "Định tuyến"
 NARRATOR_HEADING = "Diễn giải"
 
-RouteSource = Literal["llm", "keyword"]
-AnswerSource = Literal["llm", "template"]
+RouteSource = Literal["llm", "keyword", "prebaked"]
+AnswerSource = Literal["llm", "template", "prebaked"]
 
 # The closed failure set, same discipline as `security_agent.FAILURE_REASONS`: a counted
 # reason beats a grepped one. Transport-level reasons come through from `_post_chat`.
@@ -77,6 +94,9 @@ MAX_FIELD_CHARS = 400
 
 _FENCE_RE = re.compile(r"^\s*```(?:json)?\s*(.*?)\s*```\s*$", re.DOTALL)
 _INT_RE = re.compile(r"\d+")
+# A thousands separator inside a number, in either convention: `482,344` and `482.344` are
+# one number, not two. See `_unsupported_numbers` for why this matters.
+_GROUPED_DIGITS_RE = re.compile(r"(?<=\d)[.,](?=\d{3}(?!\d))")
 
 QUESTION_MAX_CHARS = 500
 
@@ -107,6 +127,24 @@ class ChatTurn:
     route_failure: str | None = None
     answer_failure: str | None = None
     tokens: int = 0
+    # Which model wrote the prose, or `None` when no model was involved (deterministic
+    # path). Recorded rather than re-derived from the environment, because the environment
+    # at render time is not necessarily the one that produced the answer — a prebaked turn
+    # is served by an instance that may hold no key at all.
+    model: str | None = None
+    # Wall-clock to produce *this* turn, measured around the whole `answer()` call.
+    elapsed_seconds: float = 0.0
+    # Set only on the prebaked path: the model call happened at bake time, so its cost and
+    # duration belong to that moment and must be labelled with it. A turn showing
+    # `tokens=5077` that spent nothing just now would otherwise read as a fresh call.
+    prebaked: bool = False
+    baked_at: str | None = None
+    baked_elapsed_seconds: float | None = None
+    # What wrote the words at bake time. A bake where the model routed correctly but had its
+    # narration rejected still cost tokens and still names a model — and the words in it were
+    # written by `template_answer()`. Carrying this keeps the page from crediting the model
+    # with prose it did not write, which the live path never does either.
+    baked_answer_source: AnswerSource | None = None
     prompt_version: str | None = None
     prompt_sha256: str | None = None
     # Which query the model (or the router) actually asked for, as JSON — shown in the
@@ -296,6 +334,13 @@ def _narrator_turn(question: str, result: QueryResult) -> str:
     return "\n".join(lines)
 
 
+def _ints_in(text: str) -> list[int]:
+    """Every integer in `text`, with grouped digits joined first. Both sides of the gate read
+    numbers the same way, so a figure written `482.344` in a table and `482,344` in a
+    narration are the same number to both."""
+    return [int(match) for match in _INT_RE.findall(_GROUPED_DIGITS_RE.sub("", text))]
+
+
 def _allowed_numbers(result: QueryResult, question: str) -> set[int]:
     """Every integer a narration may legitimately contain: the counts and values in the
     table, the total, integers embedded in labels (CWE numbers, `A03`), the row count, and
@@ -308,12 +353,12 @@ def _allowed_numbers(result: QueryResult, question: str) -> set[int]:
             if isinstance(value, int):
                 allowed.add(value)
             elif isinstance(value, str):
-                allowed.update(int(match) for match in _INT_RE.findall(value))
+                allowed.update(_ints_in(value))
             elif isinstance(value, list):
                 for item in value:
                     if isinstance(item, str):
-                        allowed.update(int(m) for m in _INT_RE.findall(item))
-    allowed.update(int(match) for match in _INT_RE.findall(question))
+                        allowed.update(_ints_in(item))
+    allowed.update(_ints_in(question))
     # Percentages the prompt forbids but a model may still produce from two numbers it was
     # legitimately given. Allowing the arithmetically correct ones keeps the check aimed at
     # invention rather than at rounding.
@@ -330,9 +375,18 @@ def _allowed_numbers(result: QueryResult, question: str) -> set[int]:
 def _unsupported_numbers(text: str, result: QueryResult, question: str) -> list[int]:
     """Integers in the narration that the table cannot account for. This is the check that
     makes 'the model never counts' an enforced property rather than a prompt instruction —
-    the same shape as the analysis agent throwing away a model-invented file path."""
+    the same shape as the analysis agent throwing away a model-invented file path.
+
+    Grouped digits are joined back up first. The table stores `482344` as an int and a model
+    writing Vietnamese writes it `482.344`, which a bare `\\d+` scan reads as the two numbers
+    482 and 344 — neither in the table, so a correctly-quoted figure was being thrown out as
+    an invention. (Found by `scripts/bake_chat.py`: the overview answer, the first question
+    anyone clicks, lost its model prose to exactly this.) Joining them is a *tightening*, not
+    a loosening: an invented `4.823` now has to clear the gate as 4823 rather than slipping
+    through as the harmless fragments 4 and 823."""
     allowed = _allowed_numbers(result, question)
-    return sorted({int(match) for match in _INT_RE.findall(text)} - allowed)
+    joined = _GROUPED_DIGITS_RE.sub("", text)
+    return sorted({int(match) for match in _INT_RE.findall(joined)} - allowed)
 
 
 def _route_with_model(
@@ -407,6 +461,7 @@ def answer(question: str, report, use_llm: bool = True, model: str | None = None
     Runs at most two model calls and always produces an answer. `use_llm=False` — or an
     environment with no credentials — takes the deterministic path end to end, which is
     reproducible and costs nothing."""
+    started = time.perf_counter()
     question = (question or "").strip()
     notes: list[str] = []
     tokens = 0
@@ -500,6 +555,11 @@ def answer(question: str, report, use_llm: bool = True, model: str | None = None
         route_failure=route_failure,
         answer_failure=answer_failure,
         tokens=tokens,
+        # The model is named only when it actually wrote something. A turn that fell back to
+        # the template after a failed call spent tokens but produced no model prose, and
+        # naming the model there would credit it with words it did not write.
+        model=model_id if (route_source == "llm" or answer_source == "llm") else None,
+        elapsed_seconds=time.perf_counter() - started,
         prompt_version=prompt.version if prompt else None,
         prompt_sha256=prompt.sha256 if prompt else None,
         spec_json=json.dumps(
@@ -514,3 +574,191 @@ def answer(question: str, report, use_llm: bool = True, model: str | None = None
         ),
         notes=notes,
     )
+
+
+# --- the prebaked path ----------------------------------------------------------------
+#
+# The suggested questions are a closed list of seven, and the report they ask about only
+# changes when somebody reruns `scripts/analyze.py`. Paying the model twice per visitor to
+# re-derive the same seven paragraphs is a cost with no reader-visible benefit — and the
+# cost the reader *does* see is the ~20s wait.
+#
+# So the seven are baked once (`scripts/bake_chat.py`) and served from disk. What is baked
+# is the prose and the route; what is not baked is a single number. The numbers are
+# recomputed by `report_query` on every serve, which is what makes the check below possible
+# and what keeps the chart, the table and the finding list honest even if the cache is old.
+
+CACHE_VERSION = 1
+
+
+def report_fingerprint(report) -> str:
+    """Identifies the report a cache entry was baked against, cheaply.
+
+    `generated_at` alone would do for the normal case (a rerun of the agent rewrites it),
+    but a hand-edited or truncated `report.jsonl` keeps its sidecar timestamp — so the
+    finding count rides along, and a report that lost findings stops matching."""
+    meta = report.meta
+    return f"{meta.generated_at}|{len(report.findings)}|{meta.prompt_sha256}"
+
+
+def _cache_key(question: str) -> str:
+    """Lookup key for a question. Case and surrounding space are not meaningful — the
+    buttons send exact strings, but a visitor who retypes one by hand should still get the
+    fast path."""
+    return " ".join((question or "").split()).casefold()
+
+
+def load_prebaked(path: Path = CHAT_CACHE_PATH) -> dict:
+    """The bake file, or an empty cache. A missing file is the normal state of a fresh
+    checkout and a corrupt one must not take the page down — either way the chat simply
+    falls through to the live path it has always had."""
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    if not isinstance(payload, dict) or payload.get("version") != CACHE_VERSION:
+        return {}
+    return payload
+
+
+def prebaked_questions(path: Path = CHAT_CACHE_PATH) -> set[str]:
+    """Which questions have a baked answer, as opaque lookup keys. Pair it with
+    `is_prebaked()` — the UI uses this to say which buttons are instant rather than
+    promising a speed it cannot deliver."""
+    payload = load_prebaked(path)
+    return {_cache_key(entry.get("question", "")) for entry in payload.get("entries", [])}
+
+
+def is_prebaked(question: str, baked: set[str] | None = None, path: Path = CHAT_CACHE_PATH) -> bool:
+    """Whether `question` has a baked answer. Pass `baked` to check a list of questions
+    against one read of the file instead of one read each.
+
+    This answers "is there an entry", not "will it be served" — `prebaked_answer()` can
+    still reject a stale entry, and that is the check that decides."""
+    return _cache_key(question) in (prebaked_questions(path) if baked is None else baked)
+
+
+def prebaked_answer(question: str, report, path: Path = CHAT_CACHE_PATH) -> ChatTurn | None:
+    """A baked answer for `question`, re-verified against the report on disk, or `None`.
+
+    `None` is never an error — it means "answer this the ordinary way". Every rejection
+    below is a case where serving the cache would put prose next to a table that no longer
+    agrees with it, which is the one thing this path is not allowed to do."""
+    started = time.perf_counter()
+    payload = load_prebaked(path)
+    if not payload:
+        return None
+
+    fingerprint = report_fingerprint(report)
+    if payload.get("report_fingerprint") != fingerprint:
+        return None
+
+    key = _cache_key(question)
+    entry = next(
+        (item for item in payload.get("entries", []) if _cache_key(item.get("question", "")) == key),
+        None,
+    )
+    if entry is None:
+        return None
+
+    prose = (entry.get("answer") or "").strip()
+    if not prose:
+        return None
+
+    # The query is rerun, not restored. Everything numeric on the page therefore comes from
+    # the same code path a live turn uses, and the cache contributes exactly one thing: words.
+    try:
+        spec = report_query.spec_from_dict(entry.get("spec") or {})
+        result = report_query.run_query(report, spec)
+    except QuerySpecError:
+        return None
+
+    # The same gate a live narration has to pass. If the report moved under the cache in a
+    # way the fingerprint did not catch, the prose loses here instead of on screen.
+    if _unsupported_numbers(prose, result, question):
+        return None
+
+    return ChatTurn(
+        question=question.strip(),
+        spec=spec,
+        result=result,
+        answer=prose,
+        route_source="prebaked",
+        answer_source="prebaked",
+        tokens=int(entry.get("tokens") or 0),
+        model=entry.get("model"),
+        elapsed_seconds=time.perf_counter() - started,
+        prebaked=True,
+        baked_at=payload.get("baked_at"),
+        baked_elapsed_seconds=entry.get("elapsed_seconds"),
+        baked_answer_source=entry.get("answer_source"),
+        prompt_version=entry.get("prompt_version"),
+        prompt_sha256=entry.get("prompt_sha256"),
+        spec_json=json.dumps(
+            {
+                "op": spec.op,
+                "dimension": spec.dimension,
+                "filters": spec.filters,
+                "limit": spec.limit,
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+        ),
+        notes=[
+            (
+                "câu trả lời dựng sẵn — lời văn lấy từ lần gọi mô hình lúc bake, "
+                "còn mọi con số vẫn được tính lại từ báo cáo ngay lúc mở trang"
+            )
+        ],
+    )
+
+
+def bake_entry(turn: ChatTurn) -> dict:
+    """One `ChatTurn` as a cache row. Defined here rather than in the baking script so the
+    file's shape and its reader live in the same module."""
+    return {
+        "question": turn.question,
+        "answer": turn.answer,
+        "spec": {
+            "op": turn.spec.op,
+            "dimension": turn.spec.dimension,
+            "filters": turn.spec.filters,
+            "limit": turn.spec.limit,
+        },
+        "model": turn.model,
+        "tokens": turn.tokens,
+        "elapsed_seconds": round(turn.elapsed_seconds, 3),
+        "route_source": turn.route_source,
+        "answer_source": turn.answer_source,
+        "prompt_version": turn.prompt_version,
+        "prompt_sha256": turn.prompt_sha256,
+    }
+
+
+def bake_payload(
+    report,
+    turns: list[ChatTurn],
+    baked_at: str | None = None,
+    existing: dict | None = None,
+) -> dict:
+    """The cache file for `turns`, merged over `existing` when that describes the same report.
+
+    Merging is what makes `--only` usable: re-baking one question after a prompt fix should
+    cost one question, not seven. A cache baked against a *different* report is dropped
+    rather than merged — half-old prose beside half-new numbers is the exact failure the
+    fingerprint exists to prevent."""
+    fingerprint = report_fingerprint(report)
+    kept: list[dict] = []
+    if existing and existing.get("report_fingerprint") == fingerprint:
+        rebaked = {_cache_key(turn.question) for turn in turns}
+        kept = [
+            entry
+            for entry in existing.get("entries", [])
+            if _cache_key(entry.get("question", "")) not in rebaked
+        ]
+    return {
+        "version": CACHE_VERSION,
+        "report_fingerprint": fingerprint,
+        "baked_at": baked_at or datetime.now(UTC).isoformat(timespec="seconds"),
+        "entries": kept + [bake_entry(turn) for turn in turns],
+    }

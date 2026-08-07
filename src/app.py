@@ -21,6 +21,15 @@ C-019 (v1.7) added the Security Report page (FR22). Same rule again: its only da
 is `security_agent.load_report()`. This file never opens the generated report, never parses
 it, and never calls the analysis endpoint — the deployed instance holds no key and renders a
 report baked into the image at build time.
+
+C-021 (v1.9) reorganized around what the site is actually for. The nav is three entries —
+Security Report, Comparison (formerly Results), Knowledge Base — with Security Report as the
+landing page, and its tabs are Hỏi đáp then Tổng quan, so a visitor lands on the question box.
+The separate findings-list tab is gone: the list now sits under the chat and an answer can
+scope it to its own evidence. The suggested questions are served from `report_chat`'s prebaked
+cache, which is why they return in milliseconds; every answer prints the model, tokens and
+wall-clock that produced it. This file still computes nothing — `report_query` counts, and
+`report_chat` decides what a turn cost.
 """
 import json
 import os
@@ -111,8 +120,8 @@ def render_readonly_run_notice() -> None:
             "credentials and cannot start a scan, so nothing here can spend LLM budget."
         )
         st.markdown(
-            "**Results** and **Knowledge Base** show real output from scans already run. "
-            "To run a new scan, use a local checkout:"
+            "**Security Report**, **Comparison** and **Knowledge Base** show real output "
+            "from scans already run. To run a new scan, use a local checkout:"
         )
         st.code(
             "uv sync\nuv run streamlit run app.py   # http://localhost:8501",
@@ -368,7 +377,7 @@ def compare_table(rows: list[dict]) -> tuple[pd.DataFrame, dict]:
 
 
 def page_results() -> None:
-    st.title("Results")
+    st.title("Comparison")
     st.caption("One run at a time — scorecard, headline numbers, and how it was produced.")
 
     # Step 1 of the picker states what each type holds, so choosing a scan type is an
@@ -418,7 +427,9 @@ def page_results() -> None:
         st.markdown(scorecard_body(bundle.scorecard_md) or "_(no scorecard found for this run)_")
 
     if bundle.compare_rows is not None:
-        st.subheader("Comparison")
+        # Not "Comparison" — that is the page's own name now, and a section heading that
+        # repeats the page title tells the reader nothing about what changed.
+        st.subheader("Batch table")
         st.caption(
             f"The same batch as a sortable table — one row per {KIND_UNIT[kind]}, "
             "not per test file."
@@ -827,6 +838,21 @@ CHAT_MAX_QUESTIONS_PER_SESSION = int(
     os.environ.get("CHAT_MAX_QUESTIONS_PER_SESSION", "").strip() or 25
 )
 
+# Which findings the list at the bottom of the Q&A tab is currently scoped to, and the
+# question that scoped it. `None` means the whole report.
+FOCUS_IDS_KEY = "report_focus_ids"
+FOCUS_LABEL_KEY = "report_focus_label"
+
+
+def focus_findings(finding_ids: list[str], label: str) -> None:
+    st.session_state[FOCUS_IDS_KEY] = list(finding_ids)
+    st.session_state[FOCUS_LABEL_KEY] = label
+
+
+def clear_focus() -> None:
+    st.session_state[FOCUS_IDS_KEY] = None
+    st.session_state[FOCUS_LABEL_KEY] = None
+
 
 def seed_model_env() -> None:
     """Make `.env` visible to the chat layer on a local checkout, once per process.
@@ -859,13 +885,87 @@ def seed_model_env() -> None:
         return
 
 
+def _seconds(value: float | None) -> str:
+    """A duration a reader can compare at a glance. Sub-second answers are the whole point
+    of the prebaked path, so they must not all round to `0s`."""
+    if value is None:
+        return "—"
+    if value < 0.001:
+        # Serving from the cache really is this fast. `0 ms` would read as "not measured".
+        return "<1 ms"
+    if value < 1:
+        return f"{value * 1000:.0f} ms"
+    return f"{value:.1f} s"
+
+
+def render_chat_stats(turn) -> None:
+    """Model, tokens, wall-clock — under every answer, always the same three facts.
+
+    A prebaked turn reports *both* clocks and says which is which: the milliseconds it took
+    to serve, and the seconds the model spent when the prose was written. Collapsing those
+    into one number would either hide a real cost or invent a wait that did not happen."""
+    if turn.prebaked and turn.model:
+        # Two different things a baked turn can be, and they must not read alike: the model
+        # wrote these words, or the model only picked the query and a template wrote them.
+        wrote = (
+            f"mô hình `{turn.model}` viết"
+            if turn.baked_answer_source == "llm"
+            else f"lời văn từ mẫu — mô hình `{turn.model}` chỉ chọn truy vấn"
+        )
+        st.caption(
+            f":material/bolt: **Trả lời dựng sẵn** · {wrote} · {turn.tokens:,} token · "
+            f"{_seconds(turn.elapsed_seconds)} — token và "
+            f"{_seconds(turn.baked_elapsed_seconds)} ở trên là chi phí lúc bake, "
+            "lần mở trang này không gọi mô hình."
+        )
+        return
+    if turn.prebaked:
+        # A cache baked with `--no-llm`. Saying "0 token" beside a model name that was never
+        # used would be two half-truths making a whole one; there is no model here at all.
+        st.caption(
+            f":material/bolt: **Trả lời dựng sẵn** · không dùng mô hình (đường tất định) · "
+            f"0 token · {_seconds(turn.elapsed_seconds)}"
+        )
+        return
+    if turn.model:
+        st.caption(
+            f":material/neurology: mô hình `{turn.model}` · {turn.tokens:,} token · "
+            f"{_seconds(turn.elapsed_seconds)}"
+        )
+        return
+    st.caption(
+        f":material/function: đường tất định (không gọi mô hình) · 0 token · "
+        f"{_seconds(turn.elapsed_seconds)}"
+    )
+
+
 def render_chat_provenance(turn) -> None:
     """How the answer was produced, in the answer's own words. A turn that fell back is
     labelled as one — an answer written by a template must never be mistaken for an answer
     written by the model, and a route the model got wrong has to be diagnosable."""
-    route_label = "mô hình" if turn.route_source == "llm" else "từ khoá (tất định)"
-    answer_label = "mô hình" if turn.answer_source == "llm" else "mẫu (tất định)"
+    route_label = {
+        "llm": "mô hình",
+        "prebaked": "mô hình, lúc bake",
+    }.get(turn.route_source, "từ khoá (tất định)")
+    answer_label = {
+        "llm": "mô hình",
+        "prebaked": (
+            "mô hình, lúc bake (lấy từ cache)"
+            if turn.baked_answer_source == "llm"
+            else "mẫu (tất định) — lúc bake, lời của mô hình đã bị bộ chặn bịa số loại"
+        ),
+    }.get(turn.answer_source, "mẫu (tất định)")
     with st.expander("Câu trả lời này được tạo ra thế nào?"):
+        if turn.prebaked:
+            st.markdown(
+                f"- **Dựng sẵn lúc:** `{turn.baked_at or '—'}` — lời văn đã có sẵn, "
+                "trang không gọi mô hình khi bạn bấm."
+            )
+            st.markdown(
+                "- **Số liệu vẫn tính lại ngay bây giờ:** truy vấn dưới đây chạy lại từ "
+                "`report.jsonl` mỗi lần mở trang, và mọi con số trong lời văn được đối "
+                "chiếu lại với bảng — không khớp thì cache bị bỏ, không hiện ra."
+            )
         st.markdown(
             f"- **Chọn truy vấn:** {route_label}"
             + (f" — mô hình thất bại: `{turn.route_failure}`" if turn.route_failure and turn.route_source == "keyword" else "")
@@ -880,8 +980,15 @@ def render_chat_provenance(turn) -> None:
             f"- **Số phát hiện làm căn cứ:** {len(turn.result.finding_ids)} "
             f"(khớp bộ lọc: {turn.result.total})"
         )
-        if turn.tokens:
-            st.markdown(f"- **Token đã dùng cho lượt này:** {turn.tokens}")
+        st.markdown(
+            f"- **Mô hình:** `{turn.model or 'không dùng mô hình'}` · "
+            f"**token:** {turn.tokens:,} · **thời gian:** {_seconds(turn.elapsed_seconds)}"
+            + (
+                f" (lúc bake: {_seconds(turn.baked_elapsed_seconds)})"
+                if turn.prebaked
+                else ""
+            )
+        )
         if turn.prompt_version:
             st.markdown(
                 f"- **Prompt:** `{turn.prompt_version}` sha256 `{(turn.prompt_sha256 or '')[:12]}`"
@@ -890,12 +997,35 @@ def render_chat_provenance(turn) -> None:
             st.caption(note)
 
 
-def render_chat_turn(turn) -> None:
+def render_chat_turn(turn, index: int, total_findings: int) -> None:
     with st.chat_message("user"):
         st.markdown(turn.question)
     with st.chat_message("assistant"):
         st.markdown(turn.answer)
-        render_query_result(turn.result, key=f"chat_{id(turn)}")
+        render_chat_stats(turn)
+        render_query_result(turn.result, key=f"chat_{index}")
+
+        # The bridge into the findings list below. An answer names a subset of the report —
+        # `finding_ids` is exactly the evidence it rests on — and until now the only way to
+        # read those findings was to leave for another tab and rebuild the filter by hand.
+        # This scopes the list in place instead, so the answer and the evidence for it are
+        # one surface (DESIGN.md rule 1: tabs are lenses, the reader never navigates out).
+        count = len(turn.result.finding_ids)
+        focused = st.session_state.get(FOCUS_IDS_KEY) == turn.result.finding_ids
+        if count and count < total_findings:
+            st.button(
+                f"Xem {count} phát hiện làm căn cứ" + (" (đang xem)" if focused else ""),
+                key=f"focus_{index}",
+                icon=":material/filter_alt:",
+                disabled=focused,
+                on_click=focus_findings,
+                args=(turn.result.finding_ids, turn.question),
+            )
+        elif count:
+            st.caption(
+                f"Câu trả lời này dựa trên toàn bộ **{count}** phát hiện — "
+                "danh sách đầy đủ nằm ngay dưới."
+            )
         render_chat_provenance(turn)
 
 
@@ -942,11 +1072,17 @@ def render_report_chat(report) -> None:
     )
 
     if not has_model:
+        # Careful with the wording here: with a baked cache, this instance *does* serve
+        # model-written prose for the suggested questions. It just cannot write any new.
+        # Saying "no model prose here" flatly would be false on exactly the seven answers
+        # most visitors read.
         st.info(
-            "**Chế độ không có mô hình.** Bản cài này không có khoá API, nên câu hỏi được "
-            "định tuyến bằng từ khoá và câu trả lời được dựng từ mẫu — tất định, không tốn "
-            "token. Biểu đồ và số liệu **không đổi**: chúng chưa bao giờ do mô hình sinh ra. "
-            "Muốn có lời văn do mô hình viết thì chạy bản local có `.env`.",
+            "**Chế độ không có mô hình.** Bản cài này không có khoá API, nên câu hỏi mới "
+            "được định tuyến bằng từ khoá và trả lời bằng mẫu — tất định, không tốn token. "
+            "Các **câu hỏi gợi ý** thì đã được trả lời sẵn từ trước bằng mô hình thật, nên "
+            "vẫn có lời văn do mô hình viết (kèm số token và thời gian của lần bake đó). "
+            "Biểu đồ và số liệu **không đổi** trong mọi trường hợp: chúng chưa bao giờ do "
+            "mô hình sinh ra.",
             icon=":material/info:",
         )
     else:
@@ -968,34 +1104,57 @@ def render_report_chat(report) -> None:
             icon=":material/hourglass_disabled:",
         )
 
+    # The suggested questions are baked (`scripts/bake_chat.py`), so they answer in
+    # milliseconds. Saying so on the buttons is not decoration: it tells a reader which
+    # click is free and instant and which one will make them wait for two model calls.
+    baked = report_chat.prebaked_questions()
     if not history:
         st.markdown("**Thử một câu hỏi:**")
+        if baked:
+            st.caption(
+                ":material/bolt: Các câu hỏi gợi ý đã được trả lời sẵn — bấm là hiện ngay, "
+                "không phải đợi mô hình."
+            )
         suggestion_columns = st.columns(3)
         for index, suggestion in enumerate(report_chat.SUGGESTED_QUESTIONS):
+            is_baked = report_chat.is_prebaked(suggestion, baked)
             if suggestion_columns[index % 3].button(
-                suggestion, key=f"suggest_{index}", width="stretch"
+                suggestion,
+                key=f"suggest_{index}",
+                width="stretch",
+                icon=":material/bolt:" if is_baked else None,
             ):
                 st.session_state[CHAT_PENDING_KEY] = suggestion
                 st.rerun()
 
-    for turn in history:
-        render_chat_turn(turn)
+    total_findings = len(report.findings)
+    for index, turn in enumerate(history):
+        render_chat_turn(turn, index, total_findings)
 
     question = st.session_state.pop(CHAT_PENDING_KEY, None) or st.chat_input(
         "ví dụ: lỗi CWE-89 nằm ở những tệp nào?"
     )
     if question:
-        with st.spinner("Đang tra báo cáo…"):
-            turn = report_chat.answer(question, report, use_llm=has_model and not out_of_turns)
+        # Tried first, and for any question — a visitor who retypes a suggested question
+        # deserves the same instant answer the button gives. A miss costs one small file
+        # read and falls straight through to the path that was always here.
+        turn = report_chat.prebaked_answer(question, report)
+        if turn is None:
+            with st.spinner("Đang tra báo cáo…"):
+                turn = report_chat.answer(
+                    question, report, use_llm=has_model and not out_of_turns
+                )
+            # A prebaked answer spends nothing, so it does not draw down the session's share
+            # of the budget either. The quota exists to bound model calls, not clicks.
+            st.session_state[CHAT_ASKED_KEY] = asked + 1
         history.append(turn)
-        st.session_state[CHAT_ASKED_KEY] = asked + 1
+        focus_findings(turn.result.finding_ids, turn.question)
         st.rerun()
 
-    if history:
-        st.divider()
-        if st.button("Xoá hội thoại", icon=":material/delete:"):
-            st.session_state[CHAT_HISTORY_KEY] = []
-            st.rerun()
+    if history and st.button("Xoá hội thoại", icon=":material/delete:"):
+        st.session_state[CHAT_HISTORY_KEY] = []
+        clear_focus()
+        st.rerun()
 
 
 def page_security_report() -> None:
@@ -1025,9 +1184,16 @@ def page_security_report() -> None:
     meta = report.meta
     render_report_status_banner(meta)
 
-    overview_tab, chat_tab, list_tab = st.tabs(
-        ["Tổng quan", "Hỏi đáp", "Danh sách phát hiện"]
-    )
+    # Hỏi đáp first, and therefore selected on open. The findings list is no longer a tab
+    # of its own: a list of 93 findings is not a third thing to look at, it is the evidence
+    # under whatever was just asked, so it now lives at the bottom of Hỏi đáp where an
+    # answer can scope it.
+    chat_tab, overview_tab = st.tabs(["Hỏi đáp", "Tổng quan"])
+
+    with chat_tab:
+        render_report_chat(report)
+        st.divider()
+        render_findings_list(report, meta)
 
     with overview_tab:
         render_report_kpis(report)
@@ -1036,14 +1202,33 @@ def page_security_report() -> None:
         st.divider()
         render_insights(report)
 
-    with chat_tab:
-        render_report_chat(report)
-
-    with list_tab:
-        render_findings_list(report, meta)
-
 
 def render_findings_list(report, meta) -> None:
+    st.subheader("Danh sách phát hiện")
+
+    # Two scopes, stacked and both visible: what the last answer rests on, then the manual
+    # filters on top of it. Keeping the answer's scope as a dismissable banner rather than
+    # folding it into the filter widgets means the reader can always see *why* they are
+    # looking at 12 findings instead of 93, and undo it in one click.
+    findings = report.findings
+    focus_ids = st.session_state.get(FOCUS_IDS_KEY)
+    if focus_ids is not None and len(focus_ids) < len(report.findings):
+        wanted = set(focus_ids)
+        findings = [f for f in report.findings if f.finding_id in wanted]
+        label = st.session_state.get(FOCUS_LABEL_KEY) or "câu hỏi vừa rồi"
+        banner, action = st.columns([4, 1], vertical_alignment="center")
+        banner.info(
+            f"Đang thu hẹp theo câu trả lời cho **“{label}”** — "
+            f"{len(findings)}/{len(report.findings)} phát hiện.",
+            icon=":material/filter_alt:",
+        )
+        action.button(
+            "Xem tất cả",
+            width="stretch",
+            icon=":material/filter_alt_off:",
+            on_click=clear_focus,
+        )
+
     with st.container(border=True):
         filter_columns = st.columns([1, 1, 2])
         with filter_columns[0]:
@@ -1057,7 +1242,7 @@ def render_findings_list(report, meta) -> None:
                 key="report_query",
             )
 
-    visible = filter_findings(report.findings, severities, confidences, query)
+    visible = filter_findings(findings, severities, confidences, query)
     st.markdown(f"Đang hiện **{len(visible)}** trên tổng số **{len(report.findings)}** phát hiện.")
 
     if not visible:
@@ -1116,23 +1301,27 @@ st.sidebar.caption("Metis vs OWASP BenchmarkJava")
 # `scan_runner`'s own refusal to spawn (ADR 19), which is why `page_run_scan` keeps its
 # read-only guard even though nothing can reach it here.
 #
-# Streamlit serves the default page at `/` and IGNORES its `url_path`, so exactly one page
-# can never be linked to by name. Locally that is Run Scan, which has no name to lose. On
-# the deploy it is Results — chosen over Security Report because `/security-report` is the
-# link README and the week-3 report both hand out, and it has to keep resolving. Nothing
-# published points at `/results`.
-run_page = st.Page(page_run_scan, title="Run Scan", icon=":material/play_circle:",
-                   default=not is_readonly)
-results_page = st.Page(page_results, title="Results", icon=":material/bar_chart:",
-                       url_path="results", default=is_readonly)
+# Security Report is the landing page in BOTH modes now. That is a deliberate trade with a
+# cost worth naming: Streamlit serves the default page at `/` and IGNORES its `url_path`
+# (`navigation/page.py`: `return "" if self._default else self._url_path`), so making this
+# page the default is exactly what makes `/security-report` stop resolving. The published
+# deep link moves to the site root, which is the URL that now shows the report — README,
+# the week-3 report and the e2e probe were updated together with this line, and nothing
+# published points at `/comparison` or `/run`.
+security_page = st.Page(page_security_report, title="Security Report",
+                        icon=":material/shield:", url_path="security-report", default=True)
 pages = [
-    results_page,
-    st.Page(page_security_report, title="Security Report", icon=":material/shield:",
-            url_path="security-report"),
-    st.Page(page_knowledge_base, title="Knowledge Base", icon=":material/search:", url_path="knowledge-base"),
+    security_page,
+    st.Page(page_results, title="Comparison", icon=":material/bar_chart:",
+            url_path="comparison"),
+    st.Page(page_knowledge_base, title="Knowledge Base", icon=":material/search:",
+            url_path="knowledge-base"),
 ]
 if not is_readonly:
-    pages.insert(0, run_page)
+    # Local only, and last: it is the one page the deploy cannot serve, so it does not get
+    # to displace the page every visitor comes for.
+    pages.append(st.Page(page_run_scan, title="Run Scan", icon=":material/play_circle:",
+                         url_path="run"))
 current_page = st.navigation(pages)
 
 with st.sidebar:

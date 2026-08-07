@@ -1,0 +1,128 @@
+{
+  "version": 1,
+  "report_fingerprint": "2026-08-06T05:21:14.629592+00:00|93|8b8356c3ff1b11cb6816b4c630bc2555c133ed568841cdd52fc23b4c0561a1b9",
+  "baked_at": "2026-08-07T05:04:15+00:00",
+  "entries": [
+    {
+      "question": "Phân bố theo mức độ nghiêm trọng ra sao?",
+      "answer": "Trong 93 phát hiện, phân bố theo `severity` là — **critical**: 22, **high**: 38, **medium**: 26, **low**: 7.",
+      "spec": {
+        "op": "count_by",
+        "dimension": "severity",
+        "filters": {},
+        "limit": 10
+      },
+      "model": "deepseek-v4-pro",
+      "tokens": 3687,
+      "elapsed_seconds": 30.061,
+      "route_source": "llm",
+      "answer_source": "template",
+      "prompt_version": "1.1.0",
+      "prompt_sha256": "2b89c6a524d363787235f1a976c5fc807a8e3a2268ec29ea3bb3abf411612bd4"
+    },
+    {
+      "question": "Ma trận mức độ và độ tin cậy trông thế nào?",
+      "answer": "Ma trận `severity` × `confidence` trên 93 phát hiện. Ô lớn nhất là mức **high** với độ tin cậy **medium**: 34 phát hiện.",
+      "spec": {
+        "op": "matrix",
+        "dimension": null,
+        "filters": {},
+        "limit": 10
+      },
+      "model": "deepseek-v4-pro",
+      "tokens": 2860,
+      "elapsed_seconds": 13.922,
+      "route_source": "llm",
+      "answer_source": "template",
+      "prompt_version": "1.1.0",
+      "prompt_sha256": "2b89c6a524d363787235f1a976c5fc807a8e3a2268ec29ea3bb3abf411612bd4"
+    },
+    {
+      "question": "Thống kê theo CWE, loại lỗi nào nhiều nhất?",
+      "answer": "**CWE-89** (SQL Injection) là loại lỗi xuất hiện nhiều nhất với 12 lần phát hiện. Kế tiếp là **CWE-209** (Information Exposure Through an Error Message) và **CWE-22** (Path Traversal), mỗi loại đều có 10 lần. Đây là ba nhóm cần ưu tiên xử lý trước do có số lần xuất hiện vượt trội so với các CWE còn lại.",
+      "spec": {
+        "op": "count_by",
+        "dimension": "cwe",
+        "filters": {},
+        "limit": 10
+      },
+      "model": "deepseek-v4-pro",
+      "tokens": 4124,
+      "elapsed_seconds": 30.269,
+      "route_source": "llm",
+      "answer_source": "llm",
+      "prompt_version": "1.1.0",
+      "prompt_sha256": "2b89c6a524d363787235f1a976c5fc807a8e3a2268ec29ea3bb3abf411612bd4"
+    },
+    {
+      "question": "Tệp nào bị nhiều phát hiện nhất?",
+      "answer": "Tệp `src/main/java/org/owasp/benchmark/testcode/BenchmarkTest00023.java` là tệp duy nhất có mặt trong danh sách với 4 phát hiện, đây cũng là con số cao nhất được ghi nhận. Việc tập trung rà soát và khắc phục các phát hiện trong tệp này có thể giúp loại bỏ đồng thời nhiều vấn đề nhất so với bất kỳ tệp đơn lẻ nào khác trong bộ kiểm thử.",
+      "spec": {
+        "op": "top_files",
+        "dimension": null,
+        "filters": {},
+        "limit": 1
+      },
+      "model": "deepseek-v4-pro",
+      "tokens": 4580,
+      "elapsed_seconds": 43.556,
+      "route_source": "llm",
+      "answer_source": "llm",
+      "prompt_version": "1.1.0",
+      "prompt_sha256": "2b89c6a524d363787235f1a976c5fc807a8e3a2268ec29ea3bb3abf411612bd4"
+    },
+    {
+      "question": "Liệt kê các lỗi CWE-89",
+      "answer": "Tất cả 12 phát hiện CWE-89 đều ở mức nghiêm trọng `critical` và thuộc nhóm OWASP A03-Injection. Nổi bật nhất là phát hiện `25674b8f2738` (SQL Injection qua nối chuỗi) với 3 điểm xuất hiện trong 3 tệp và mức tin cậy `high` – đây là điểm cần được ưu tiên xử lý ngay. Các phát hiện còn lại phần lớn có mức tin cậy `medium`, mỗi cái chỉ xuất hiện 1 lần nhưng đều nguy hiểm, liên quan đến việc ghép nối dữ liệu không an toàn vào câu truy vấn SQL.",
+      "spec": {
+        "op": "list_findings",
+        "dimension": null,
+        "filters": {
+          "cwe": "CWE-89"
+        },
+        "limit": 100
+      },
+      "model": "deepseek-v4-pro",
+      "tokens": 4943,
+      "elapsed_seconds": 28.108,
+      "route_source": "llm",
+      "answer_source": "llm",
+      "prompt_version": "1.1.0",
+      "prompt_sha256": "2b89c6a524d363787235f1a976c5fc807a8e3a2268ec29ea3bb3abf411612bd4"
+    },
+    {
+      "question": "Độ phủ kho tri thức thế nào?",
+      "answer": "74 trên 93 phát hiện trích dẫn được ít nhất một tài liệu trong kho tri thức. Phần còn lại vẫn được truy hồi tài liệu nhưng mô hình không trích dẫn cái nào — đây là thước đo độ phủ của kho tri thức, không phải chất lượng phân tích.",
+      "spec": {
+        "op": "kb_coverage",
+        "dimension": null,
+        "filters": {},
+        "limit": 10
+      },
+      "model": "deepseek-v4-pro",
+      "tokens": 3202,
+      "elapsed_seconds": 27.298,
+      "route_source": "llm",
+      "answer_source": "template",
+      "prompt_version": "1.1.0",
+      "prompt_sha256": "2b89c6a524d363787235f1a976c5fc807a8e3a2268ec29ea3bb3abf411612bd4"
+    },
+    {
+      "question": "Tổng quan báo cáo này có gì?",
+      "answer": "Báo cáo ghi nhận 93 phát hiện sau khi gộp 2 trùng lặp từ 111 cảnh báo thô. Phân bố mức độ nghiêm trọng: 22 critical, 38 high, 26 medium và 7 low — cho thấy cần tập trung xử lý các lỗi critical và high trước. Có 3 phát hiện không có phân tích mô hình (fallback) nên cần kiểm tra thủ công.",
+      "spec": {
+        "op": "overview",
+        "dimension": null,
+        "filters": {},
+        "limit": 10
+      },
+      "model": "deepseek-v4-pro",
+      "tokens": 3571,
+      "elapsed_seconds": 25.471,
+      "route_source": "llm",
+      "answer_source": "llm",
+      "prompt_version": "1.1.0",
+      "prompt_sha256": "2b89c6a524d363787235f1a976c5fc807a8e3a2268ec29ea3bb3abf411612bd4"
+    }
+  ]
+}
