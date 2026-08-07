@@ -57,7 +57,11 @@ def main() -> int:
             failures.append("a password input exists in the DOM")
 
         print("\n=== 2. The landing page IS Results, with real data ===")
-        for marker in ("scorecard", "deepseek"):
+        # Structural markers, not a model name. The old check looked for 'deepseek', which
+        # was really an assertion about which run the page happens to preselect — that run
+        # is `cx/gpt-5.4` today, and the check failed while the page was perfectly healthy.
+        # A scorecard with a precision figure in it is what "real data rendered" means.
+        for marker in ("scorecard", "precision", "recall"):
             hit = marker in landing.lower()
             print(f"  {marker!r:14} on landing     : {'yes' if hit else 'NO <-- BAD'}")
             if not hit:
