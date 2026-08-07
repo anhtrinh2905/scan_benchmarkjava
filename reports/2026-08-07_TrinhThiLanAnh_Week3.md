@@ -8,6 +8,21 @@
 
 Trang Security Report (là trang mặc định, nên nó nằm ngay ở URL gốc): [https://scan-benchmarkjava-production.up.railway.app](https://scan-benchmarkjava-production.up.railway.app)
 
+## Mục lục
+
+- [Sơ đồ tổng quan](#sơ-đồ-tổng-quan)
+- [1. Agent được dùng tại những bước nào?](#1-agent-được-dùng-tại-những-bước-nào)
+- [2. Mức nghiêm trọng, độ tin cậy, và chi phí](#2-mức-nghiêm-trọng-độ-tin-cậy-và-chi-phí)
+- [3. Tầng truy vấn](#3-tầng-truy-vấn)
+- [4. Sáu biểu đồ](#4-sáu-biểu-đồ)
+- [5. Hỏi đáp](#5-hỏi-đáp)
+  - [Đường không cần API key](#đường-không-cần-api-key)
+- [6. Trang Security Report](#6-trang-security-report)
+- [7. Ba kịch bản hỏng, chạy thật ở dòng lệnh](#7-ba-kịch-bản-hỏng-chạy-thật-ở-dòng-lệnh)
+
+---
+
+
 ## Sơ đồ tổng quan
 
 Hai chặng, nối nhau bằng một tệp trên đĩa.
@@ -95,26 +110,19 @@ Mô hình chỉ được gọi ở **đúng một chỗ** trong cả chặng sin
 | Dẫn tài liệu KB  | 74 / 93 (79.6%) · có code gợi ý sửa: 87 / 93                           |
 | Chi phí thật     | `deepseek-v4-pro` · **95** lần gọi · **482,344** token · **58.8 phút** |
 
+
 ---
 
 
 
-# Phần mở rộng: đọc được báo cáo, không chỉ có báo cáo
-
-93 phát hiện là danh sách quá dài để đọc lần lượt. Bản đầu của trang Security Report trả lời được *"có những gì"* nhưng không trả lời được *"critical có bao nhiêu, nằm ở tệp nào"*. Ba module dưới đây làm đúng việc đó — và làm theo cách **không để mô hình đếm**.
-
 ## 3. Tầng truy vấn
 
-**Danh sách thao tác là cố định** — đây là tính chất quan trọng nhất. Bộ định tuyến, dù viết bằng từ khoá hay do mô hình sinh, **không thể xin một thao tác không có trong danh sách**: **7** thao tác (`overview`, `count_by`, `matrix`, `top_files`, `list_findings`, `lookup`, `kb_coverage`), **6** chiều thống kê (`severity`, `confidence`, `cwe`, `owasp`, `tool`, `analysis_source`) và **8** khoá lọc (6 chiều đó cộng `file` và `text`). Không `eval`, không tra thuộc tính bằng chuỗi, không cho khoá lạ đi qua. `validate_spec()` chạy trên **mọi** spec bất kể ai viết ra, nên `{'op': 'drop_table', …}` bị trả về `QuerySpecError: khoá thừa trong định tuyến: sql` y như một route viết tay sai.
+Tầng này chỉ làm một việc: đọc báo cáo đã nạp rồi **đếm bằng Python** và trả về con số. Hai điều dưới đây được kiểm ngay trong mã bằng `assert`, chứ không phải chỉ hứa trong tài liệu:
 
-Một khoá lọc lạ bị **từ chối** chứ không bị lặng lẽ bỏ qua. Vì một bộ lọc không làm gì còn tệ hơn một bộ lọc bị từ chối: con số đếm ra vẫn trông đầy thẩm quyền trong khi nó đang trả lời câu hỏi khác.
+- **Không phát hiện nào bị rơi.** Cộng tất cả các hàng của một bảng đếm thì luôn ra đúng tổng số phát hiện. Phát hiện nào không có giá trị ở cột đang đếm thì được xếp vào hàng `không xác định`, chứ **không bị bỏ ra ngoài**: có 24/93 phát hiện không xếp được vào nhóm OWASP nào, và biểu đồ hiện đúng 24 đó thay vì giấu đi.
+- **Con số nào cũng truy lại được.** Mỗi kết quả đều kèm `finding_ids` — danh sách đúng những phát hiện đã dùng để tính ra con số đó. Nhờ vậy một số trên màn hình luôn dò lại được về từng dòng trong `report.jsonl`.
 
-Hai bảo đảm được `assert` ngay trong mã, không phải chỉ ghi trong tài liệu:
-
-- **Không mất phát hiện.** Với mọi `count_by`, tổng các hàng luôn bằng `total`. Phát hiện thiếu giá trị ở chiều đang đếm sẽ vào nhãn `không xác định` chứ **không biến mất** — 24/93 phát hiện không map được nhóm OWASP nào, và biểu đồ hiện đúng khoảng trống đó thay vì giấu đi.
-- **Lần ngược được.** Mỗi `QueryResult` mang theo `finding_ids` — đúng những phát hiện mà câu trả lời dựa vào — nên một con số trên màn hình truy về được từng dòng của `report.jsonl`.
-
-Riêng **ma trận** `severity × confidence` phải là một thao tác riêng, vì hai biểu đồ cột rời nhau không ghép lại được: "bao nhiêu phát hiện mức cao mà độ tin cậy thấp" không có trong biểu đồ nào. Mà đó đúng là ô cần cho việc chọn sửa gì trước — nhóm *trông* khẩn cấp nhưng bằng chứng yếu.
+**Ma trận** `severity × confidence` **phải là một thao tác riêng.** Hai biểu đồ cột rời nhau không trả lời được câu hỏi bắt chéo: xem biểu đồ mức nghiêm trọng rồi xem tiếp biểu đồ độ tin cậy thì vẫn không biết "mức cao mà độ tin cậy thấp thì có bao nhiêu". Mà đó lại chính là ô cần nhất khi chọn sửa gì trước — nhóm *trông* khẩn cấp nhưng bằng chứng còn yếu.
 
 
 | severity ↓ / confidence → | high  | medium | low    | **Tổng** |
@@ -127,7 +135,7 @@ Riêng **ma trận** `severity × confidence` phải là một thao tác riêng,
 | **Tổng theo cột**         | **3** | **74** | **16** | **93**   |
 
 
-Hai trục là **cố định**, không lấy từ spec: vừa vì cả hai đều do Python quyết định (mức bị kẹp ±1 bậc so với công cụ, độ tin cậy bị ép sàn khi bằng chứng mỏng), vừa để giữ danh sách thao tác thật sự đóng — không ai xin được một lưới `cwe × file` 25×69 mà không ai đọc nổi.
+
 
 ## 4. Sáu biểu đồ
 
@@ -143,7 +151,10 @@ Dashboard là **6 panel cố định**, khai báo một lần ở `DASHBOARD_PAN
 | Độ tin cậy                  | `count_by confidence` | 3 high · 74 medium · 16 low                                              |
 | Độ phủ kho tri thức         | `kb_coverage`         | 74/93 (79.6%) có trích dẫn                                               |
 
-## 5. Hỏi đáp 
+
+
+
+## 5. Hỏi đáp
 
 ```mermaid
 flowchart TB
@@ -206,7 +217,7 @@ flowchart TB
 
 
 
-## 6. Trang Security Report 
+## 6. Trang Security Report
 
 Đây cũng là **trang mặc định** của app, và tab đầu là **Hỏi đáp** — người mở web rơi thẳng vào khung câu hỏi chứ không vào một bảng KPI.
 
@@ -216,7 +227,8 @@ flowchart TB
 | **Hỏi đáp** (mặc định) | Chatbot tiếng Việt, 7 câu hỏi gợi ý **trả lời sẵn** (mỗi câu chạm một `op` khác nhau), khung "câu trả lời này được tạo ra thế nào?", và **danh sách phát hiện** ngay bên dưới |
 | **Tổng quan**          | Hàng KPI · ma trận `severity × confidence` có tô nền theo 4 dải · 6 biểu đồ                                                                                                   |
 
-Danh sách phát hiện **không còn là tab thứ ba**: nó nằm dưới khung chat và mỗi câu trả lời thu hẹp được nó về đúng `QueryResult.finding_ids` của mình — hỏi "liệt kê các lỗi CWE-89" thì danh sách còn đúng 12 phát hiện đó, kèm nút "Xem tất cả". Bảy câu gợi ý được `./scripts/bake_chat.py` dựng sẵn nên bấm là hiện ngay; chỉ **lời văn** được cache, còn truy vấn vẫn chạy lại qua `report_query` mỗi lần mở trang và vẫn phải qua đúng cổng `_unsupported_numbers()` — lệch một con số là cache bị bỏ. Mỗi câu trả lời in kèm **mô hình, token, thời gian**; với câu dựng sẵn thì đó là chi phí *lúc bake* và dòng chú thích nói rõ như vậy.
+
+
 
 ## 7. Ba kịch bản hỏng, chạy thật ở dòng lệnh
 
@@ -230,17 +242,3 @@ Ba kiểu hỏng phân biệt được bằng **thông báo** và bằng **mã t
 | Endpoint hỏng (mọi nhóm) | `degraded`      | **3**    | *"SUY GIẢM: … mọi phát hiện đều gắn nhãn fallback, nhưng đây KHÔNG phải một lần chạy thành công."* |
 
 
-## 8. Hạn chế
-
-
-| Hạn chế                                       | Chi tiết                                                                                                                                                                                      |
-| --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Độ tin cậy `high` gần như không với tới được  | `high` cần tài liệu KB khớp **cộng** (nhiều lần xuất hiện **hoặc** nhiều công cụ cùng báo). Thực tế 93/93 nhóm có ≥1 tài liệu KB nhưng chỉ **4**/93 có nhiều lần xuất hiện → trần 4/93 (4.3%) |
-| Nhánh "nhiều công cụ" không bao giờ chạy      | 97 cảnh báo Metis + 14 Semgrep, nhưng 90 nhóm thuần Metis, 3 thuần Semgrep, **0 nhóm hỗn hợp** — hai công cụ đặt `rule_id` khác quy ước nên không bao giờ trùng khoá nhóm                     |
-| Truy hồi KB chỉ là TF-IDF từ khoá             | 19 phát hiện không có trích dẫn **đều** đã được truy hồi 3 tài liệu, mô hình chủ động không trích — và nó đúng: với `CWE-15`, TF-IDF trả `insecure-cookie` chỉ vì trùng từ vựng               |
-| 79.6% đo kho tri thức, không đo agent         | KB có 23 tài liệu, thiếu hẳn 12 CWE trong nhóm 19 phát hiện đó. Cùng lỗ hổng này hiện lên biểu đồ OWASP thành 24 phát hiện "không xác định". Đã ghi vào `DEBT.md`                             |
-| Bộ chặn bịa số cố tình chặt tay               | Loại cả phép cộng đúng ("ba nhóm đầu chiếm 70 phát hiện") — mất chất lượng lời văn để đổi lấy một bảo đảm máy kiểm tra được                                                                   |
-| Định tuyến từ khoá hẹp hơn định tuyến mô hình | *"mức cao mà độ tin cậy thấp có bao nhiêu?"* đúng ra phải thành `matrix`, từ khoá lại cho `count_by confidence` + lọc `severity=high`: có đúng con số cần (3) nhưng sai hình dạng             |
-| Chatbot không có trí nhớ hội thoại            | "còn cái kia thì sao?" sẽ không hiểu. Có chủ đích: giữ chi phí mỗi lượt biết trước (đúng 2 lần gọi) và giữ mọi lượt tái lập được                                                              |
-| Một mô hình, một phiên bản prompt, không A/B  | Mọi số liệu đến từ **đúng một** cấu hình `deepseek-v4-pro` + prompt `1.0.0`. Hạ tầng so sánh đã có sẵn, chỉ là chưa chạy                                                                      |
-| Vá zero-token mới chỉ ở agent phân tích       | `scripts/bench.py`, `sweep.py`, `ablation.py` **vẫn chưa** có bảo vệ này — mà sự cố tuần 2 xảy ra ở chính ba script đó                                                                        |
