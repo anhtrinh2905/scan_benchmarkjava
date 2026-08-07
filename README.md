@@ -248,9 +248,8 @@ nó đã đi đường nào (`route_source` / `answer_source`), hiện trong khu
 tạo ra thế nào?" — một câu trả lời do mẫu dựng **không bao giờ** được nhận nhầm là do mô hình
 viết.
 
-**Trên bản deploy công khai** (không có API key theo thiết kế) chatbot vẫn dùng được: nó chạy
-hoàn toàn tất định, có banner nói rõ, và **biểu đồ với số liệu không đổi** — chúng chưa bao
-giờ do mô hình sinh ra.
+**Không có API key** thì chatbot vẫn dùng được: nó chạy hoàn toàn tất định, có banner nói rõ,
+và **biểu đồ với số liệu không đổi** — chúng chưa bao giờ do mô hình sinh ra.
 
 Muốn có lời văn do mô hình viết ở bản local, app đọc `.env` bằng chính bộ đọc của
 `scripts/bench.py` (không có bộ đọc `.env` thứ tư trong repo). Biến đã export vẫn thắng:
@@ -263,8 +262,47 @@ OPENCODE_BASE_URL=https://x.invalid uv run streamlit run src/app.py   # ép hỏ
 Chạy test (offline, 0 lần gọi mạng, không cần API key):
 
 ```bash
-uv run pytest tests/test_report_query.py -q     # 76 test
+uv run pytest tests/test_report_query.py -q     # 88 test
 ```
+
+### Bật mô hình thật trên bản deploy — và hạn mức đi kèm
+
+Bản deploy công khai **không đăng nhập** (ADR 19). Trước đây nó an toàn vì không giữ khoá:
+chỗ tệ nhất một khách ẩn danh làm được là *đọc*. Đưa khoá thật vào đổi đúng một thứ — ô chat
+trở thành đường để **người lạ tiêu tiền của bạn**. Vì vậy khoá và trần chi tiêu đi cùng nhau.
+
+Khoá **không** nằm trong image. `.dockerignore` loại `.env` có chủ đích, và một secret nướng
+vào layer image thì ai pull được image là đọc được. Cấu hình đi qua **biến môi trường của
+Railway**, tiêm lúc chạy — `model_available()` đọc thẳng `os.environ` nên không cần sửa code,
+và `seed_model_env()` chỉ đọc file `.env` ở chế độ local.
+
+```bash
+railway variables --set OPENCODE_API_KEY=...        # secret — tự đặt, đừng dán vào chat/PR
+railway variables --set OPENCODE_BASE_URL=https://opencode.ai/zen/go/v1
+railway variables --set CUSTOM_SCAN_MODEL=deepseek-v4-pro
+```
+
+Hai lớp trần, chặn hai thứ khác nhau:
+
+| Biến | Mặc định | Chặn cái gì |
+| --- | --- | --- |
+| `CHAT_DAILY_TOKEN_BUDGET` | `150000` | **Hoá đơn.** Token mỗi ngày UTC cho cả process. Hết → `answer()` ngừng gọi mô hình, lùi về đường tất định. Đặt `0` để bỏ trần. Gõ sai → về mặc định, **không** thành vô hạn |
+| `CHAT_MAX_QUESTIONS_PER_SESSION` | `25` | **Phần của một người.** Để người đầu tiên tìm ra trang không uống hết ngân sách trong một lượt ngồi |
+
+Trần theo phiên **cố ý dễ vượt** (mở phiên mới là reset) — nó là nút chia phần, không phải
+kiểm soát truy cập; ở đây không có kiểm soát truy cập, theo thiết kế. Thứ thật sự giữ ví là
+trần token theo ngày. Sổ token nằm trong process và **reset khi container khởi động lại**,
+nên một lần redeploy cấp lại một ngày mới — chỗ lỏng đã biết, ghi ra đây thay vì giấu: nó
+chặn trường hợp chạy loạn, chứ không phải đồng hồ tính tiền chính xác tới từng cent.
+
+Hết hạn mức **không phải lỗi**. Trang lùi về đúng đường tất định mà nó đã chạy trước khi có
+khoá: định tuyến từ khoá + câu trả lời dựng từ mẫu, số liệu và biểu đồ y nguyên. Lượt đó được
+gắn nhãn `budget_exhausted` trong khung "Câu trả lời này được tạo ra thế nào?", nên một câu
+do mẫu dựng không bao giờ bị nhận nhầm là do mô hình viết.
+
+Thêm khoá **không** mở lại scan. Scan bị chặn ở tầng `scan_runner` bằng `SCAN_UI_READONLY`,
+trang Run Scan không được dựng trên deploy, và `metis/` + `BenchmarkJava/` còn không có trong
+image. Đường duy nhất tiêu token trên bản deploy là ô chat này.
 
 ## Ba lần chạy chính
 
@@ -360,6 +398,11 @@ lại kết quả.
 | ------------------ | ----------------------- | --------------------------------------------------------------------------------------------------------------- |
 | `SCAN_UI_READONLY` | Dockerfile đặt sẵn `=1` | `1`/`true`/`yes` → chặn scan ở tầng `scan_runner`, không chỉ ẩn nút. Giá trị khác (kể cả gõ sai) → chế độ local |
 | `PORT`             | Railway tự đặt          | Cổng Streamlit lắng nghe                                                                                        |
+| `OPENCODE_API_KEY` | Railway variables       | **Secret.** Có mặt (cùng `OPENCODE_BASE_URL` + `CUSTOM_SCAN_MODEL`) thì chatbot gọi mô hình thật. Vắng → chạy tất định |
+| `OPENCODE_BASE_URL` | Railway variables      | Endpoint OpenAI-compatible                                                                                      |
+| `CUSTOM_SCAN_MODEL` | Railway variables      | Tên model dùng cho chatbot                                                                                      |
+| `CHAT_DAILY_TOKEN_BUDGET` | Railway variables | Trần token mỗi ngày UTC cho cả process (mặc định `150000`, `0` = bỏ trần)                                       |
+| `CHAT_MAX_QUESTIONS_PER_SESSION` | Railway variables | Số câu hỏi gọi mô hình mỗi phiên (mặc định `25`)                                                     |
 
 
 Các bước:

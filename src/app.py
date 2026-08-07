@@ -815,6 +815,17 @@ def render_insights(report) -> None:
 
 CHAT_HISTORY_KEY = "report_chat_history"
 CHAT_PENDING_KEY = "report_chat_pending"
+CHAT_ASKED_KEY = "report_chat_asked"
+
+# Per-session ceiling on model-backed questions, on top of the day's token budget in
+# `report_chat`. The two guard different things: the token budget bounds the bill, this
+# bounds one visitor's share of it so the first person to find the page cannot drink the
+# whole day in one sitting. It is deliberately easy to escape — a new session resets it —
+# because it is a fairness knob, not an access control. There is no access control here by
+# decision (ADR 19); the ceiling that actually protects the wallet is the daily one.
+CHAT_MAX_QUESTIONS_PER_SESSION = int(
+    os.environ.get("CHAT_MAX_QUESTIONS_PER_SESSION", "").strip() or 25
+)
 
 
 def seed_model_env() -> None:
@@ -888,6 +899,38 @@ def render_chat_turn(turn) -> None:
         render_chat_provenance(turn)
 
 
+def render_chat_budget_notice() -> None:
+    """What the model costs and what is left of today's allowance.
+
+    Shown whenever a real key is present, including locally. A public demo spending real
+    money should say so on the page rather than in a README — someone reading an answer has
+    a right to know it cost something, and a visitor who finds the budget spent should be
+    told that is what happened, not left guessing why the prose went flat."""
+    remaining = report_chat.budget_remaining()
+    if remaining is None:
+        st.caption(
+            "Đang dùng **mô hình thật** (2 lần gọi mỗi câu: chọn truy vấn + viết lời). "
+            "Không đặt hạn mức token — mọi câu hỏi đều gọi mô hình."
+        )
+        return
+
+    limit = report_chat.daily_token_budget()
+    if remaining <= 0:
+        st.info(
+            f"**Đã dùng hết hạn mức {limit:,} token của hôm nay.** Câu hỏi vẫn được trả lời "
+            "bằng đường tất định (định tuyến từ khoá + mẫu) — **số liệu và biểu đồ không "
+            "đổi**, chúng chưa bao giờ do mô hình sinh ra. Hạn mức reset theo ngày UTC.",
+            icon=":material/savings:",
+        )
+        return
+
+    st.caption(
+        f"Đang dùng **mô hình thật** (2 lần gọi mỗi câu). Còn **{remaining:,}** / "
+        f"{limit:,} token trong hạn mức hôm nay; hết thì tự động lùi về đường tất định "
+        "chứ không báo lỗi."
+    )
+
+
 def render_report_chat(report) -> None:
     seed_model_env()
     has_model = report_chat.model_available() and bool(report_chat.default_model())
@@ -906,8 +949,24 @@ def render_report_chat(report) -> None:
             "Muốn có lời văn do mô hình viết thì chạy bản local có `.env`.",
             icon=":material/info:",
         )
+    else:
+        render_chat_budget_notice()
 
     history = st.session_state.setdefault(CHAT_HISTORY_KEY, [])
+
+    # The session quota counts questions ASKED, not turns kept, so "Xoá hội thoại" clears
+    # the screen without refilling the allowance — otherwise the button would be the bypass.
+    asked = st.session_state.get(CHAT_ASKED_KEY, 0)
+    out_of_turns = has_model and asked >= CHAT_MAX_QUESTIONS_PER_SESSION
+    if out_of_turns:
+        st.warning(
+            f"Phiên này đã hỏi {asked} câu, chạm hạn mức "
+            f"**{CHAT_MAX_QUESTIONS_PER_SESSION}** của một phiên. Đây là bản demo công khai "
+            "dùng khoá API thật, nên mỗi phiên có giới hạn. Các câu hỏi tiếp theo vẫn được "
+            "trả lời, nhưng bằng **đường tất định** (định tuyến từ khoá + mẫu) — số liệu và "
+            "biểu đồ **không đổi**, chỉ lời văn là do mẫu dựng.",
+            icon=":material/hourglass_disabled:",
+        )
 
     if not history:
         st.markdown("**Thử một câu hỏi:**")
@@ -927,8 +986,9 @@ def render_report_chat(report) -> None:
     )
     if question:
         with st.spinner("Đang tra báo cáo…"):
-            turn = report_chat.answer(question, report, use_llm=has_model)
+            turn = report_chat.answer(question, report, use_llm=has_model and not out_of_turns)
         history.append(turn)
+        st.session_state[CHAT_ASKED_KEY] = asked + 1
         st.rerun()
 
     if history:

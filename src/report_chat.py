@@ -27,6 +27,7 @@ import json
 import os
 import re
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Literal
 
@@ -57,11 +58,13 @@ ROUTE_FAILURE_REASONS = (
     "prompt_missing",
     "non_json",
     "spec_invalid",
+    "budget_exhausted",
 )
 ANSWER_FAILURE_REASONS = (
     "no_credentials",
     "prompt_missing",
     "unsupported_number",
+    "budget_exhausted",
 )
 
 # How many table rows the narrator is shown. A `count_by cwe` returns 25 and a
@@ -110,6 +113,97 @@ class ChatTurn:
     # "how this was answered" expander so a wrong answer is diagnosable.
     spec_json: str = ""
     notes: list[str] = field(default_factory=list)
+
+
+# --- the spend guard ----------------------------------------------------------------
+#
+# The deployed instance is public and unauthenticated by decision (ADR 19). Until now that
+# was safe because it held no key: the worst an anonymous visitor could do was read. Giving
+# it a real key changes exactly one thing — the chat box becomes a way to spend somebody's
+# money — so the key arrives together with a ceiling on what it can spend.
+#
+# This is a budget, not a security control. A determined abuser can open a new session, and
+# nothing here authenticates anyone. What it guarantees is that the bill has a maximum: once
+# the day's tokens are gone, `answer()` stops calling the model and falls back to the
+# deterministic path, which is the same path the instance ran on before it had a key. The
+# page keeps answering; it just answers plainly.
+#
+# The ledger is per-process and resets when the container restarts, so a redeploy grants a
+# fresh day. That is a known looseness, written down rather than papered over: it bounds a
+# runaway, it does not bill-meter to the cent.
+
+DAILY_TOKEN_BUDGET_ENV = "CHAT_DAILY_TOKEN_BUDGET"
+# Roughly 30–60 questions a day at this prompt size. Chosen to be useful for a demo and
+# uninteresting to abuse, and overridable — set it to `0` to lift the ceiling entirely.
+DEFAULT_DAILY_TOKEN_BUDGET = 150_000
+
+# `0` and the empty string both mean "no ceiling"; anything unparseable falls back to the
+# default rather than to unlimited, so a typo cannot silently uncap the spend.
+UNLIMITED = 0
+
+
+@dataclass
+class _Ledger:
+    """Tokens spent by the chat on one UTC day, in this process."""
+
+    day: str = ""
+    spent: int = 0
+
+
+_ledger = _Ledger()
+
+
+def _utc_day(today: str | None = None) -> str:
+    return today or datetime.now(UTC).date().isoformat()
+
+
+def daily_token_budget() -> int:
+    """The day's ceiling in tokens, or `UNLIMITED`. A misspelled value resolves to the
+    default, never to unlimited — the same fail-toward-safety rule `runtime_mode()` uses for
+    `SCAN_UI_READONLY`, applied to money instead of to scanning."""
+    raw = os.environ.get(DAILY_TOKEN_BUDGET_ENV, "").strip()
+    if not raw:
+        return DEFAULT_DAILY_TOKEN_BUDGET
+    try:
+        value = int(raw)
+    except ValueError:
+        return DEFAULT_DAILY_TOKEN_BUDGET
+    return UNLIMITED if value <= 0 else value
+
+
+def tokens_spent(today: str | None = None) -> int:
+    """Tokens this process has spent today. A new UTC day zeroes the ledger on read, so no
+    scheduler or background task is needed to roll it over."""
+    day = _utc_day(today)
+    if _ledger.day != day:
+        return 0
+    return _ledger.spent
+
+
+def record_tokens(tokens: int, today: str | None = None) -> None:
+    day = _utc_day(today)
+    if _ledger.day != day:
+        _ledger.day, _ledger.spent = day, 0
+    _ledger.spent += max(0, int(tokens))
+
+
+def budget_remaining(today: str | None = None) -> int | None:
+    """Tokens left today, or `None` when there is no ceiling."""
+    limit = daily_token_budget()
+    if limit == UNLIMITED:
+        return None
+    return max(0, limit - tokens_spent(today))
+
+
+def budget_exhausted(today: str | None = None) -> bool:
+    remaining = budget_remaining(today)
+    return remaining is not None and remaining <= 0
+
+
+def reset_budget() -> None:
+    """Test seam. Nothing in the app calls this — a restart is what clears the ledger in
+    production, and that is deliberate."""
+    _ledger.day, _ledger.spent = "", 0
 
 
 def model_available() -> bool:
@@ -326,6 +420,17 @@ def answer(question: str, report, use_llm: bool = True, model: str | None = None
     if use_llm and not wants_llm:
         route_failure = answer_failure = "no_credentials"
 
+    # Checked before the prompt is even loaded: an exhausted budget is not an error, it is
+    # the instance reverting to the deterministic path it shipped on. The turn is labelled
+    # so the page can say so rather than passing a template answer off as a model one.
+    if wants_llm and budget_exhausted():
+        wants_llm = False
+        route_failure = answer_failure = "budget_exhausted"
+        notes.append(
+            f"đã dùng hết hạn mức {daily_token_budget():,} token của hôm nay — "
+            "câu hỏi này được trả lời bằng đường tất định"
+        )
+
     if wants_llm:
         try:
             prompt = load_chat_prompt()
@@ -378,6 +483,12 @@ def answer(question: str, report, use_llm: bool = True, model: str | None = None
     if prose is None:
         prose = report_query.template_answer(result)
         answer_source = "template"
+
+    # Charged after the fact, from what the provider actually reported — a call that failed
+    # in transport reports zero and costs nothing, and a call that burned tokens before
+    # being thrown out for inventing a number still counts against the ceiling. Billing
+    # follows spend, not usefulness.
+    record_tokens(tokens)
 
     return ChatTurn(
         question=question,

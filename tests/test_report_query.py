@@ -38,6 +38,15 @@ def _offline(monkeypatch):
     monkeypatch.setattr("requests.post", forbidden)
 
 
+@pytest.fixture(autouse=True)
+def _fresh_budget():
+    """The chat's token ledger is process-global, so without this a test that spends tokens
+    leaks into the next one — and eventually into a false 'budget exhausted'."""
+    report_chat.reset_budget()
+    yield
+    report_chat.reset_budget()
+
+
 @pytest.fixture(scope="module")
 def report():
     """The report committed to the repo — the same bytes the deployed page serves, so the
@@ -457,6 +466,120 @@ def test_the_prompt_file_carries_both_sections_and_a_version():
 def test_a_missing_prompt_file_is_refused_not_defaulted(tmp_path):
     with pytest.raises(agent.PromptMissingError):
         report_chat.load_chat_prompt(tmp_path / "nope.md")
+
+
+# --- the spend guard --------------------------------------------------------------
+#
+# The deployed instance is public and unauthenticated, so once it holds a real key the chat
+# box is a way to spend money. These tests are about the ceiling on that, and the property
+# they protect is: running out of budget degrades to the deterministic path, it never errors
+# and it never silently keeps spending.
+
+
+def test_an_unset_budget_falls_back_to_the_documented_default(monkeypatch):
+    monkeypatch.delenv(report_chat.DAILY_TOKEN_BUDGET_ENV, raising=False)
+    assert report_chat.daily_token_budget() == report_chat.DEFAULT_DAILY_TOKEN_BUDGET
+
+
+def test_a_misspelled_budget_fails_toward_the_default_not_toward_unlimited(monkeypatch):
+    """Same rule `runtime_mode()` uses for `SCAN_UI_READONLY`, applied to money: a typo must
+    never be the thing that uncaps spending on a public endpoint."""
+    monkeypatch.setenv(report_chat.DAILY_TOKEN_BUDGET_ENV, "một trăm nghìn")
+    assert report_chat.daily_token_budget() == report_chat.DEFAULT_DAILY_TOKEN_BUDGET
+
+
+@pytest.mark.parametrize("raw", ["0", "-1"])
+def test_zero_or_negative_means_no_ceiling(monkeypatch, raw):
+    monkeypatch.setenv(report_chat.DAILY_TOKEN_BUDGET_ENV, raw)
+    assert report_chat.daily_token_budget() == report_chat.UNLIMITED
+    assert report_chat.budget_remaining() is None
+    assert report_chat.budget_exhausted() is False
+
+
+def test_spending_draws_the_budget_down_and_then_stops_it(monkeypatch):
+    monkeypatch.setenv(report_chat.DAILY_TOKEN_BUDGET_ENV, "1000")
+    assert report_chat.budget_remaining("2026-08-07") == 1000
+    report_chat.record_tokens(400, "2026-08-07")
+    assert report_chat.budget_remaining("2026-08-07") == 600
+    assert report_chat.budget_exhausted("2026-08-07") is False
+    report_chat.record_tokens(600, "2026-08-07")
+    assert report_chat.budget_exhausted("2026-08-07") is True
+
+
+def test_overspending_the_last_call_does_not_go_negative(monkeypatch):
+    monkeypatch.setenv(report_chat.DAILY_TOKEN_BUDGET_ENV, "100")
+    report_chat.record_tokens(9_999, "2026-08-07")
+    assert report_chat.budget_remaining("2026-08-07") == 0
+
+
+def test_a_new_utc_day_refills_the_budget(monkeypatch):
+    monkeypatch.setenv(report_chat.DAILY_TOKEN_BUDGET_ENV, "1000")
+    report_chat.record_tokens(1000, "2026-08-07")
+    assert report_chat.budget_exhausted("2026-08-07") is True
+    assert report_chat.budget_remaining("2026-08-08") == 1000
+
+
+def test_an_exhausted_budget_answers_deterministically_instead_of_calling(report, monkeypatch):
+    """The whole point: no model call happens, an answer still comes back, and the turn says
+    which path produced it. This is the same path the instance ran on before it had a key."""
+    calls = _stub_calls(monkeypatch, [])  # popping from an empty queue would raise
+    monkeypatch.setenv(report_chat.DAILY_TOKEN_BUDGET_ENV, "500")
+    report_chat.record_tokens(500)
+
+    turn = report_chat.answer("mức độ ra sao", report)
+
+    assert calls == [], "a model call was made with the budget already spent"
+    assert (turn.route_source, turn.answer_source) == ("keyword", "template")
+    assert turn.route_failure == turn.answer_failure == "budget_exhausted"
+    assert turn.tokens == 0
+    assert turn.answer, "an exhausted budget must still produce an answer"
+    assert turn.result.total == len(report.findings), "the numbers are unaffected"
+
+
+def test_the_labelled_failure_is_in_the_closed_reason_set():
+    assert "budget_exhausted" in report_chat.ROUTE_FAILURE_REASONS
+    assert "budget_exhausted" in report_chat.ANSWER_FAILURE_REASONS
+
+
+def test_a_real_turn_charges_exactly_what_the_provider_reported(report, monkeypatch):
+    _stub_calls(
+        monkeypatch,
+        [
+            ('{"op": "count_by", "dimension": "severity", "filters": {}, "limit": 10}', 100, None),
+            ("Phần lớn phát hiện nằm ở mức high.", 50, None),
+        ],
+    )
+    monkeypatch.setenv(report_chat.DAILY_TOKEN_BUDGET_ENV, "1000")
+    turn = report_chat.answer("mức độ ra sao", report)
+    assert turn.tokens == 150
+    assert report_chat.tokens_spent() == 150
+    assert report_chat.budget_remaining() == 850
+
+
+def test_a_transport_failure_costs_nothing(report, monkeypatch):
+    """A call that never reached the provider reported no usage, so it must not eat budget —
+    otherwise an outage would bill the day away and leave the page degraded for no spend."""
+    _stub_calls(monkeypatch, [(None, 0, "transport_error"), (None, 0, "transport_error")])
+    monkeypatch.setenv(report_chat.DAILY_TOKEN_BUDGET_ENV, "1000")
+    report_chat.answer("mức độ ra sao", report)
+    assert report_chat.tokens_spent() == 0
+
+
+def test_a_narration_thrown_out_for_inventing_a_number_still_costs(report, monkeypatch):
+    """Billing follows spend, not usefulness. Those tokens were burned at the provider even
+    though the answer was discarded, so the ceiling has to see them."""
+    _stub_calls(
+        monkeypatch,
+        [
+            ('{"op": "count_by", "dimension": "severity", "filters": {}, "limit": 10}', 100, None),
+            ("Có 999999 phát hiện nghiêm trọng.", 70, None),
+        ],
+    )
+    monkeypatch.setenv(report_chat.DAILY_TOKEN_BUDGET_ENV, "1000")
+    turn = report_chat.answer("mức độ ra sao", report)
+    assert turn.answer_source == "template"
+    assert turn.answer_failure == "unsupported_number"
+    assert report_chat.tokens_spent() == 170
 
 
 # --- the hybrid chat: model path, stubbed -----------------------------------------
