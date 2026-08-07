@@ -1,7 +1,8 @@
 # Scan BenchmarkJava bằng Metis
 
 **Live demo:** [https://scan-benchmarkjava-production.up.railway.app](https://scan-benchmarkjava-production.up.railway.app)
-(bản public, read-only — chỉ xem Results + Knowledge Base, không chạy được scan, xem mục [Deploy](#deploy-railway-chế-độ-read-only))
+(bản public, read-only — chỉ có Results + Security Report + Knowledge Base; trang Run Scan
+không được dựng ở đó, xem mục [Deploy](#deploy-railway-chế-độ-read-only))
 
 Chạy Metis trên [OWASP BenchmarkJava](https://github.com/OWASP-Benchmark/BenchmarkJava), đo thời gian / token và chấm precision–recall theo ground truth (`expectedresults-1.2.csv`). Không dùng LLM-judge.
 
@@ -69,19 +70,22 @@ Chỉ liệt kê phần đã commit lên GitHub (`git ls-files`); `metis/` và `
 
 | Thư mục / File               | Vai trò                                                                                                                                  |
 | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/app.py`                 | Ứng dụng Streamlit chính — điều khiển scan, xem Results/Matrix/Knowledge Base                                                           |
+| `src/app.py`                 | Ứng dụng Streamlit chính — điều khiển scan, xem Results/Security Report/Knowledge Base                                                  |
 | `src/scan_runner.py`         | Seam gọi Metis (chạy scan nền, đọc SARIF/summary) — `app.py` chỉ đọc qua đây, không tự parse file kết quả                               |
 | `src/kb_search.py`           | Search Knowledge Base: keyword (TF-IDF/cosine) + semantic (embedding OPENCODE, fallback TF-IDF+LSA)                                     |
 | `src/alert_normalizer.py`    | **Chuẩn hóa alert** — gộp SARIF (semgrep) và `bench_summary.json` (Metis) về một schema `Alert` phẳng, xem chi tiết [bên dưới](#chuẩn-hóa-alert-alert_normalizerpy) |
 | `src/security_agent.py`      | **Agent phân tích bảo mật** — gộp nhóm cảnh báo, tra KB, gọi mô hình đúng 1 lần/nhóm, sinh báo cáo, xem [bên dưới](#agent-phân-tích-bảo-mật-security_agentpy) |
-| `src/prompts/`               | System prompt của agent (`security_analyst.md`) — file nguồn có version, hash vào mọi báo cáo                                            |
+| `src/report_query.py`        | **Tầng truy vấn tất định** trên báo cáo đã sinh — tập thao tác đóng, thuần Python, 0 mạng, xem [bên dưới](#hỏi-đáp-và-biểu-đồ-report_querypy--report_chartspy--report_chatpy) |
+| `src/report_charts.py`       | Dựng spec Altair từ kết quả truy vấn — chỉ vẽ đúng bảng số liệu được đưa, không tự tính lại                                              |
+| `src/report_chat.py`         | **Hỏi đáp lai** — mô hình chọn truy vấn và viết lời, Python đếm số; mọi thất bại rơi về đường tất định có nhãn                            |
+| `src/prompts/`               | System prompt có version, hash vào mọi báo cáo: `security_analyst.md` (agent phân tích) và `report_chat.md` (hỏi đáp)                    |
 | `scripts/`                   | Công cụ dòng lệnh cho dev: `bench.py`, `sweep.py`, `ablation.py`, `analyze.py` — không phải app                                          |
 | `data/kb/`                   | Kho tri thức (Knowledge Base): docs OWASP Top 10, ví dụ lỗ hổng, rule Semgrep tham khảo                                                  |
 | `data/rules/`                | Rule Semgrep tùy biến cho BenchmarkJava (dùng ở arm `static` của ablation)                                                               |
 | `data/results/`              | Kết quả quét đã bake sẵn (`bench_summary.json`, `scorecard.md`, `compare.*`, `detail.json`) — phục vụ trang Results khi deploy read-only |
 | `data/analysis/`             | Báo cáo phân tích đã sinh sẵn (`report.jsonl` + `report.meta.json`) — phục vụ trang Security Report khi deploy read-only                 |
 | `docs/specs/`                | Spec kỹ thuật (`spec-ablation-runner.md`)                                                                                                |
-| `tests/`                     | Test đơn vị của agent (`test_security_agent.py`, 76 test, mock toàn bộ mạng) + fixture                                                   |
+| `tests/`                     | Test đơn vị, mock toàn bộ mạng: `test_security_agent.py` (76 test) + `test_report_query.py` (76 test) + fixture                          |
 | `tests/e2e/`                 | Kiểm thử tự động — smoke test Playwright trên bản deploy                                                                                 |
 | `reports/`                   | Báo cáo tuần đã nộp (`2026-07-29_..._Week1.md`, …) — cố định, không sửa lại sau khi nộp                                                  |
 | `.streamlit/`                | Config Streamlit (`config.toml`)                                                                                                         |
@@ -185,6 +189,83 @@ Chạy test của agent (offline, 0 lần gọi mạng, không cần API key):
 uv run pytest tests/test_security_agent.py -q
 ```
 
+### Hỏi đáp và biểu đồ (`report_query.py` / `report_charts.py` / `report_chat.py`)
+
+Trang **Security Report** không còn là một danh sách tĩnh. Nó có ba tab: **Tổng quan**
+(KPI → ma trận `severity` × `confidence` → 6 biểu đồ), **Hỏi đáp** (chatbot),
+**Danh sách phát hiện** (bản cũ, giữ nguyên).
+
+Ma trận nằm ngay dưới KPI vì nó trả lời câu mà hai biểu đồ cột không trả lời được: *bao
+nhiêu phát hiện vừa ở mức cao vừa có độ tin cậy thấp?* — `count_by severity` và
+`count_by confidence` mỗi cái chỉ cho một trục, và không thể bắt chéo lại sau. Ô đó chính
+là nhóm "trông khẩn cấp nhưng bằng chứng mỏng", thứ nên xem trước khi triage. Cả hai trục
+đều do Python quyết định (severity bị kẹp ±1 bậc so với công cụ báo, confidence bị ép sàn
+khi bằng chứng mỏng), và các ô cộng lại đúng bằng tổng số phát hiện — `app.py` chỉ tô màu,
+`report_query.matrix()` mới là chỗ đếm.
+
+Luật chia việc — mở rộng đúng nguyên tắc của agent phân tích sang hội thoại:
+
+```mermaid
+flowchart LR
+  Q["Câu hỏi<br/>tiếng Việt"] --> R{"Định tuyến"}
+  R -->|có API key| RL["mô hình → QuerySpec (JSON)"]
+  R -->|không / lỗi| RK["route_keywords()<br/>tất định"]
+  RL --> V["validate_spec()<br/>tập thao tác ĐÓNG"]
+  RK --> V
+  V --> P["run_query()<br/>THUẦN PYTHON — đếm ở đây"]
+  P --> C["report_charts<br/>vẽ đúng bảng"]
+  P --> N{"Diễn giải"}
+  N -->|có API key| NL["mô hình viết lời"]
+  N -->|không / lỗi| NT["template_answer()<br/>tất định"]
+  NL --> G["_unsupported_numbers()<br/>số không có trong bảng → VỨT"]
+  G -->|đạt| A["Câu trả lời"]
+  G -->|hỏng| NT
+  NT --> A
+```
+
+**Mô hình không bao giờ là người đếm.** Nó chỉ làm hai việc: chọn *truy vấn nào* để chạy, và
+viết lời cho *kết quả đã tính sẵn*. Mọi con số đến từ `report_query` đọc `report.jsonl`. Điều
+này được **cưỡng chế**, không phải chỉ dặn trong prompt: `_unsupported_numbers()` quét câu trả
+lời của mô hình, thấy số nào bảng không giải thích được thì vứt cả đoạn và rơi về mẫu. Trong
+một lần thử thật, mô hình viết "70" (= 27+24+19, một phép cộng nó không được phép làm) và bị
+loại đúng như thiết kế.
+
+**Bảng số liệu luôn hiện ngay dưới câu trả lời**, nên mọi câu chữ đều đối chiếu được tại chỗ.
+
+| Thành phần | Đóng ở chỗ nào |
+| --- | --- |
+| Thao tác (`op`) | 6: `overview`, `count_by`, `top_files`, `list_findings`, `lookup`, `kb_coverage` |
+| Chiều thống kê | 6: `severity`, `confidence`, `cwe`, `owasp`, `tool`, `analysis_source` |
+| Khoá lọc | 8: 6 chiều trên + `file` + `text` |
+| Biểu đồ dashboard | 6 panel cố định, khai báo ở `report_charts.DASHBOARD_PANELS` |
+
+Không có `eval`, không tra thuộc tính bằng chuỗi, không cho qua khoá lạ — một định tuyến mà
+mô hình bịa ra sẽ bị `validate_spec()` từ chối và nêu đúng lý do.
+
+**Hai lần gọi mô hình cho mỗi câu hỏi, cả hai đều không bắt buộc và hỏng riêng lẻ được.**
+Định tuyến hỏng → `route_keywords()`; diễn giải hỏng → `template_answer()`. Mỗi lượt ghi lại
+nó đã đi đường nào (`route_source` / `answer_source`), hiện trong khung "Câu trả lời này được
+tạo ra thế nào?" — một câu trả lời do mẫu dựng **không bao giờ** được nhận nhầm là do mô hình
+viết.
+
+**Trên bản deploy công khai** (không có API key theo thiết kế) chatbot vẫn dùng được: nó chạy
+hoàn toàn tất định, có banner nói rõ, và **biểu đồ với số liệu không đổi** — chúng chưa bao
+giờ do mô hình sinh ra.
+
+Muốn có lời văn do mô hình viết ở bản local, app đọc `.env` bằng chính bộ đọc của
+`scripts/bench.py` (không có bộ đọc `.env` thứ tư trong repo). Biến đã export vẫn thắng:
+
+```bash
+uv run streamlit run src/app.py                 # tự đọc .env
+OPENCODE_BASE_URL=https://x.invalid uv run streamlit run src/app.py   # ép hỏng để thử fallback
+```
+
+Chạy test (offline, 0 lần gọi mạng, không cần API key):
+
+```bash
+uv run pytest tests/test_report_query.py -q     # 76 test
+```
+
 ## Ba lần chạy chính
 
 
@@ -254,10 +335,18 @@ Kết quả: `data/results/ablation/<arm>/` + `data/results/ablation/compare.{md
 ## Deploy (Railway, chế độ read-only)
 
 Bản deploy dùng chung **công khai, không cần đăng nhập** — và **không chạy được scan**,
-**không giữ** `OPENCODE_API_KEY`. Nó chỉ phục vụ Results + Matrix + Security Report +
+**không giữ** `OPENCODE_API_KEY`. Nó chỉ phục vụ Results + Security Report +
 Knowledge Base từ dữ liệu đã bake sẵn trong image. Cái giữ an toàn là instance không làm được
 gì, chứ không phải khó truy cập. Muốn quét thật thì chạy local như phần
 [Hướng dẫn chạy dự án](#hướng-dẫn-chạy-dự-án) trên.
+
+Ở chế độ read-only, **trang Run Scan không được dựng** — sidebar chỉ có ba trang trên. Đây
+là chuyện trình bày, không phải lớp bảo vệ: thứ chặn scan vẫn là `scan_runner.runtime_mode()`
+từ chối spawn (ADR 19), và `page_run_scan` vẫn giữ nguyên guard read-only của nó dù không
+còn đường nào tới. Kèm theo đó, Streamlit phục vụ trang mặc định ở `/` và **bỏ qua**
+`url_path` của nó, nên trên bản deploy `/` là Results và `/results` là URL duy nhất không
+phân giải được. `/security-report` và `/knowledge-base` vẫn phân giải bình thường —
+`/security-report` là link README và báo cáo Week 3 phát ra nên nó phải sống.
 
 Vì không có API key, bản deploy cũng **không thể tự sinh báo cáo phân tích** — nó chỉ hiển thị
 `data/analysis/report.jsonl` đã được commit và nướng vào image, đúng như nó hiển thị kết quả
@@ -321,6 +410,15 @@ cách so token count thủ công giữa các run.
 nhưng mô hình không trích dẫn cái nào — đúng, vì đó là kết quả trùng từ vựng chứ không đúng
 chủ đề (ví dụ `insecure-cookie` trả về cho `CWE-15`). Con số này đo **độ phủ của KB**, không
 đo chất lượng agent. Xem `DEBT.md`.
+- **Bộ chặn bịa số của chatbot cố tình chặt tay, nên nó loại cả phép cộng đúng.**
+`_unsupported_numbers()` chỉ chấp nhận con số có mặt trong bảng (cộng thêm phần trăm suy ra
+được và số nhỏ ≤10). Một câu như "ba nhóm đầu chiếm 70 phát hiện" là **đúng số học** nhưng
+vẫn bị loại, vì cho phép mọi tổng con thì bảo đảm "mô hình không đếm" không còn kiểm tra
+được. Đây là đánh đổi có chủ đích: mất một phần chất lượng lời văn để đổi lấy một bảo đảm
+máy kiểm tra được. Khi bị loại, người đọc vẫn nhận được câu trả lời tất định và thấy lý do.
+- **Chatbot không có trí nhớ hội thoại.** Mỗi câu hỏi được định tuyến độc lập; "còn cái kia
+thì sao?" sẽ không hiểu được. Đây là giới hạn phạm vi, không phải lỗi — nó giữ cho chi phí
+mỗi lượt biết trước được (đúng 2 lần gọi) và giữ cho mọi lượt tái lập được.
 - **Chất lượng lời giải thích chưa được đo.** Không có tập đánh giá, không có người chấm.
 Những gì đã kiểm chứng là các thuộc tính máy kiểm tra được (0 đường dẫn bịa, 0 mã KB không
 tồn tại, 93/93 dòng đúng lược đồ, output `--no-llm` giống hệt từng byte) — còn "dễ hiểu" thì

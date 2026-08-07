@@ -1,9 +1,9 @@
 """Streamlit control panel for the Metis/BenchmarkJava scan harness.
 
 Run config (C-002), background execution (C-003), and results viewer (C-004) below.
-UI reorganized into a sidebar-navigated, multipage layout (Run Scan / Results / Matrix /
-Knowledge Base) — all `scan_runner`/`kb_search` calls and their contracts are
-unchanged; this is a presentation-layer restructure only.
+UI reorganized into a sidebar-navigated, multipage layout (Run Scan / Results /
+Security Report / Knowledge Base) — all `scan_runner`/`kb_search` calls and their
+contracts are unchanged; this is a presentation-layer restructure only.
 
 C-012 added the deploy surface: a read-only Run Scan page, backed by `scan_runner`'s own
 refusal to spawn. C-013 removed the password gate that shipped alongside it — the
@@ -11,8 +11,11 @@ deployed instance is public by decision (ADR 19); what keeps it safe is that it 
 act, not that it is hard to reach.
 
 C-014 (v1.5) added the Matrix page — one cross-run table, 100 test files by 15 runs
-(FR14) — and rebuilt Results as a metrics-first grid (FR15). Both read only through the
-`scan_runner` seam: this file opens no file under `results/` and parses no run JSON.
+(FR14) — and rebuilt Results as a metrics-first grid (FR15). The Matrix page was later
+removed from the nav by request; Results still reads only through the `scan_runner` seam,
+so this file opens no file under `results/` and parses no run JSON. The cross-run seam
+(`scan_runner.load_matrix`, `filter_matrix`, `matrix_records`, `matrix_categories`) is
+left in place but no longer called from anywhere — FR14 has no surface in the UI now.
 
 C-019 (v1.7) added the Security Report page (FR22). Same rule again: its only data source
 is `security_agent.load_report()`. This file never opens the generated report, never parses
@@ -20,12 +23,16 @@ it, and never calls the analysis endpoint — the deployed instance holds no key
 report baked into the image at build time.
 """
 import json
+import os
 import shlex
 from dataclasses import asdict
 
 import pandas as pd
 import streamlit as st
 
+import report_charts
+import report_chat
+import report_query
 import scan_runner
 import security_agent
 from kb_search import search_kb
@@ -73,24 +80,10 @@ PAGE_CSS = """
 </style>
 """
 
-# The outcome-status scale, declared once in DESIGN.md (2026-08-01). Colour is
-# reinforcement only — every cell that gets a tint also prints its literal outcome text,
-# so the table survives colourblindness, greyscale, and the CSV export (ADR 22).
-OUTCOME_STYLE = {
-    "TP": "background-color:#ECFDF5;color:#065F46;font-weight:600",
-    "TN": "background-color:#F0FDFA;color:#115E59",
-    "FN": "background-color:#FEF2F2;color:#991B1B;font-weight:600",
-    "FP": "background-color:#FFF7ED;color:#9A3412;font-weight:600",
-}
-OUTCOME_MEANING = {
-    "TP": "caught a real vulnerability",
-    "TN": "correctly left a safe file alone",
-    "FN": "missed a real vulnerability",
-    "FP": "false alarm on a safe file",
-}
-
-# The severity scale, declared once in DESIGN.md (2026-08-06). Same law as the outcome
-# scale above: colour is reinforcement, so every badge also prints its literal word.
+# The severity scale, declared once in DESIGN.md (2026-08-06). Colour is reinforcement
+# only, so every badge also prints its literal word. (The TP/TN/FN/FP outcome scale that
+# used to live here went with the Matrix page — DESIGN.md still declares it, and it is
+# where to look if that table ever comes back.)
 SEVERITY_STYLE = {
     "critical": ("#FEF2F2", "#991B1B"),
     "high": ("#FFF7ED", "#9A3412"),
@@ -100,6 +93,13 @@ SEVERITY_STYLE = {
 }
 SEVERITY_ORDER = ["critical", "high", "medium", "low", "info"]
 CONFIDENCE_ORDER = ["high", "medium", "low"]
+
+# Cell tints for the severity × confidence grid, lightest to darkest. Four steps, not a
+# continuous gradient: a reader compares cells against each other, and four distinguishable
+# bands do that where 93 shades of blue do not. Every cell prints its count either way —
+# the tint is the same law as the outcome table, reinforcement and never the information.
+MATRIX_TINTS = ("#F5F7FC", "#E6EBF7", "#CFD9EF", "#B2C1E4")
+MATRIX_ZERO_STYLE = "color:#A1A1AA"
 
 
 def render_readonly_run_notice() -> None:
@@ -165,8 +165,8 @@ def render_active_run_badge() -> None:
         return
     status = scan_runner.poll_run(handle)
     st.markdown(f"{STATUS_ICON[status.state]} **{STATUS_LABEL[status.state]}**")
-    # The badge is on every page, so a run stays watchable while reading Results or
-    # Matrix — the same counted numbers, no second source of truth.
+    # The badge is on every page, so a run stays watchable while reading Results — the
+    # same counted numbers, no second source of truth.
     if status.progress is not None:
         st.progress(status.progress.fraction)
         st.caption(
@@ -416,7 +416,6 @@ def page_results() -> None:
         )
     with st.container(border=True):
         st.markdown(scorecard_body(bundle.scorecard_md) or "_(no scorecard found for this run)_")
-    st.caption("To see this run beside every other one, per test file, open **Matrix**.")
 
     if bundle.compare_rows is not None:
         st.subheader("Comparison")
@@ -428,251 +427,6 @@ def page_results() -> None:
         st.dataframe(frame, column_config=column_config, hide_index=True, width="stretch")
 
 
-@st.cache_data(show_spinner="Reading run artifacts…")
-def cached_matrix() -> scan_runner.Matrix:
-    """One parse of all 15 run artifacts per server process. The matrix is derived on
-    read and never persisted (ADR 21); this cache is what keeps that cheap across the
-    reruns every filter widget triggers."""
-    return scan_runner.load_matrix()
-
-
-def render_matrix_pulse(matrix: scan_runner.Matrix, view: scan_runner.Matrix) -> None:
-    """At-a-glance shape of the table, before the controls that change it. Each number
-    is `shown / total` so a filter never hides the fact that it is hiding something."""
-    always_wrong = sum(1 for row in view.rows if row.covered and row.detected == 0)
-    strip = st.columns(4)
-    strip[0].metric("Test files", f"{len(view.rows)} / {len(matrix.rows)}", border=True)
-    strip[1].metric("Scan runs", f"{len(view.runs)} / {len(matrix.runs)}", border=True)
-    strip[2].metric(
-        "Scored cells", f"{view.total_cells:,} / {matrix.total_cells:,}", border=True
-    )
-    strip[3].metric(
-        "Never right", always_wrong,
-        help="Files that every shown run which scanned them got wrong — the hard cases.",
-        border=True,
-    )
-
-
-def render_outcome_legend() -> None:
-    st.caption(
-        "  ·  ".join(f"**{code}** {meaning}" for code, meaning in OUTCOME_MEANING.items())
-        + "  ·  **blank** this run never scanned this file"
-    )
-
-
-MATRIX_FILTER_DEFAULTS = {
-    "matrix_query": "",
-    "matrix_scoring": "strict",
-    "matrix_categories": [],
-    "matrix_kinds": [],
-    "matrix_run_labels": [],
-    "matrix_outcomes": [],
-    "matrix_only_disputed": False,
-}
-
-# Column headers carry the scan type because `baseline` exists as BOTH a bench tag and a
-# sweep variant — two adjacent columns headed `baseline` is exactly the ambiguity a
-# comparison table exists to remove. "ablation" is abbreviated so the prefix does not eat
-# the whole visible width; the full label is in every column's tooltip.
-KIND_PREFIX = {"bench": "bench", "sweep": "sweep", "ablation": "abl"}
-
-
-def column_header(ref: scan_runner.RunRef) -> str:
-    return f"{KIND_PREFIX[ref.kind]}·{ref.name}"
-
-
-def current_matrix_filters() -> dict:
-    """The filter values in force for THIS run, read from the widgets' own session-state
-    keys rather than from `matrix_filter_bar`'s return value.
-
-    Streamlit refreshes a keyed widget's session-state entry before the rerun its change
-    triggered, so reading here lets the pulse strip and the coverage note render ABOVE
-    the filter bar while still reflecting the current selection. Taking the bar's return
-    value instead would leave the count one interaction behind the table."""
-    return {
-        name.removeprefix("matrix_"): st.session_state.get(name, default)
-        for name, default in MATRIX_FILTER_DEFAULTS.items()
-    }
-
-
-def matrix_filter_bar(matrix: scan_runner.Matrix) -> None:
-    """Every FR14 facet in one bordered block. The widgets write to session_state under
-    the keys `current_matrix_filters` reads; `scan_runner.filter_matrix` does the actual
-    narrowing, so what the user sees is produced by the same pure function a test calls."""
-    with st.container(border=True):
-        search_col, scoring_col = st.columns([2.5, 1])
-        with search_col:
-            st.text_input(
-                "Search",
-                placeholder="Test id, category, or CWE — e.g. 00042, sqli, cwe-89",
-                key="matrix_query",
-                label_visibility="collapsed",
-            )
-        with scoring_col:
-            st.segmented_control(
-                "Scoring",
-                options=["strict", "lenient"],
-                default="strict",
-                key="matrix_scoring",
-                help="strict counts an inconclusive triage as still-reported; "
-                     "lenient counts it as dismissed.",
-            )
-
-        cat_col, kind_col, outcome_col = st.columns(3)
-        with cat_col:
-            st.multiselect(
-                "Category",
-                options=scan_runner.matrix_categories(matrix),
-                key="matrix_categories",
-                placeholder="All categories",
-            )
-        with kind_col:
-            st.multiselect(
-                "Scan type",
-                options=["bench", "sweep", "ablation"],
-                format_func=lambda k: KIND_LABEL[k],
-                key="matrix_kinds",
-                placeholder="All scan types",
-                help="Selects which run COLUMNS the table shows.",
-            )
-        with outcome_col:
-            st.multiselect(
-                "Outcome",
-                options=list(OUTCOME_MEANING),
-                format_func=lambda code: f"{code} — {OUTCOME_MEANING[code]}",
-                key="matrix_outcomes",
-                placeholder="Any outcome",
-                help="Keeps files where at least one shown run scored this way.",
-            )
-
-        # 15 columns do not fit one screen. Naming two or three runs here is how the
-        # matrix becomes a head-to-head comparison instead of a wide scroll.
-        st.multiselect(
-            "Runs",
-            options=[ref.label for ref in matrix.runs],
-            key="matrix_run_labels",
-            placeholder="All runs — or name two or three to compare them side by side",
-        )
-        st.toggle(
-            "Only files the runs disagree about",
-            key="matrix_only_disputed",
-            help="Hides files every shown run scored the same way, leaving the ones "
-                 "where configuration actually changed the answer.",
-        )
-
-
-def render_matrix_table(matrix: scan_runner.Matrix, strict: bool) -> pd.DataFrame:
-    """The one table FR14 asks for: rows are test files, columns are runs. Returns the
-    frame so the caller can offer exactly what is on screen as a CSV."""
-    frame = pd.DataFrame(scan_runner.matrix_records(matrix, strict=strict))
-    run_labels = [ref.label for ref in matrix.runs]
-
-    styled = frame.style.map(
-        lambda value: OUTCOME_STYLE.get(value, ""), subset=run_labels
-    )
-    column_config = {
-        "test": st.column_config.TextColumn("Test file", pinned=True, width="medium"),
-        "category": st.column_config.TextColumn("Category", width="small"),
-        "cwe": st.column_config.TextColumn("CWE", width="small"),
-        "expected": st.column_config.TextColumn("Truth", width="small"),
-        "covered": st.column_config.NumberColumn(
-            "Runs", help="How many runs scanned this file.", width="small"
-        ),
-        "detected": st.column_config.NumberColumn(
-            "Right", help="How many of those runs scored it correctly.", width="small"
-        ),
-        "detection_rate": st.column_config.ProgressColumn(
-            "Hit rate", min_value=0.0, max_value=1.0, format="percent", width="small"
-        ),
-    }
-    for ref in matrix.runs:
-        column_config[ref.label] = st.column_config.TextColumn(
-            column_header(ref),
-            width="small",
-            help=f"{KIND_LABEL[ref.kind]} run `{ref.name}` — scanned {ref.test_count} "
-                 f"test files in total.",
-        )
-
-    # Grow to fit, cap at ~14 rows. A fixed height leaves a filtered-down table of four
-    # rows sitting in half a screen of empty grid, which reads as "still loading".
-    st.dataframe(
-        styled,
-        column_config=column_config,
-        hide_index=True,
-        height=min(560, 45 + 35 * len(frame)),
-        width="stretch",
-    )
-    return frame
-
-
-def page_matrix() -> None:
-    st.title("Matrix")
-    st.caption(
-        "Every test file against every scan run, in one table — so a file no "
-        "configuration ever gets right is visible at a glance."
-    )
-
-    matrix = cached_matrix()
-    if not matrix.runs:
-        st.info(
-            "No runs on disk carry per-test results yet — start one from **Run Scan**.",
-            icon=":material/info:",
-        )
-        return
-
-    # Pulse strip first, then the controls that change it (DESIGN.md object page pattern):
-    # the shape of the data is what the page is about; the filters are how you narrow it.
-    # `shown` is resolved before rendering so the count and the table can never disagree.
-    filters = current_matrix_filters()
-    view = scan_runner.filter_matrix(
-        matrix,
-        query=filters["query"],
-        categories=filters["categories"] or None,
-        kinds=filters["kinds"] or None,
-        run_labels=filters["run_labels"] or None,
-        outcomes=filters["outcomes"] or None,
-        only_disputed=filters["only_disputed"],
-    )
-    render_matrix_pulse(matrix, view)
-
-    # Blank and missed are different facts, and at these coverage spreads (6 to 100
-    # files) confusing them turns a smoke run into 94 imaginary misses. The page says so
-    # in words rather than trusting the reader to infer it (ADR 22).
-    coverage_note = view.coverage_note or matrix.coverage_note
-    if coverage_note:
-        st.info(coverage_note, icon=":material/info:")
-
-    matrix_filter_bar(matrix)
-
-    if not view.rows:
-        st.warning(
-            "No test file matches all of these filters at once. Try clearing **Outcome** "
-            "first — it is the narrowest facet, and an outcome only exists on runs that "
-            "actually scanned the file. If you also narrowed **Runs** or **Scan type**, "
-            "widen those next: they hide columns, so they can empty a row entirely.",
-            icon=":material/search_off:",
-        )
-        return
-
-    render_outcome_legend()
-    frame = render_matrix_table(view, strict=filters["scoring"] == "strict")
-
-    export_col, note_col = st.columns([1, 3])
-    with export_col:
-        st.download_button(
-            "Download this view",
-            data=frame.to_csv(index=False).encode("utf-8"),
-            file_name=f"matrix-{filters['scoring']}-{len(view.rows)}-files.csv",
-            mime="text/csv",
-            icon=":material/download:",
-            width="stretch",
-        )
-    with note_col:
-        st.caption(
-            f"Exports the {len(view.rows)} row(s) and {len(view.runs)} run column(s) "
-            "currently on screen, scored **"
-            f"{filters['scoring']}** — not the unfiltered table."
-        )
 
 
 @st.cache_data(show_spinner=False)
@@ -878,6 +632,89 @@ def render_report_kpis(report) -> None:
         column.metric(level, _count(by_severity[level]), border=True)
 
 
+def matrix_cell_style(count: int, largest: int) -> str:
+    """The tint for one grid cell. A zero is greyed rather than tinted — an empty cell must
+    read as empty, not as the palest band of 'some'."""
+    if count <= 0 or largest <= 0:
+        return MATRIX_ZERO_STYLE
+    band = min(len(MATRIX_TINTS) - 1, (count * len(MATRIX_TINTS) - 1) // largest)
+    return f"background-color:{MATRIX_TINTS[band]};color:#1E293B;font-weight:600"
+
+
+def render_severity_confidence_matrix(report) -> None:
+    """Severity against confidence, one grid.
+
+    The two bar charts below already show each axis on its own, and neither can be crossed
+    with the other after the fact: nothing in them says how many `high` findings are also
+    `low` confidence. That cell is the one worth reading first — it is the pile that looks
+    urgent and may not survive a look at the evidence.
+
+    Every number here is counted by `report_query.matrix()`. This function picks colours
+    and column labels; it does not add anything up."""
+    try:
+        result = report_query.run_query(report, report_query.QuerySpec(op="matrix"))
+    except report_query.QuerySpecError as exc:
+        st.warning(f"Không dựng được ma trận ({exc})")
+        return
+
+    st.markdown("### Ma trận mức độ × độ tin cậy")
+    st.caption(
+        "Cả hai trục đều do Python quyết định: mức độ bị kẹp trong ±1 bậc so với mức công "
+        "cụ quét báo, độ tin cậy bị ép sàn khi bằng chứng mỏng. Ô **mức cao / tin cậy "
+        "thấp** là nhóm trông khẩn cấp nhưng bằng chứng yếu — thường nên xem trước."
+    )
+
+    if not result.table:
+        st.info(
+            "Báo cáo không có phát hiện nào để xếp vào ma trận. Đây là *báo cáo rỗng*, "
+            "không phải *không có lỗ hổng*.",
+            icon=":material/info:",
+        )
+        return
+
+    columns = result.columns
+    frame = pd.DataFrame(result.table)[["label", *columns, "count"]]
+    # The scale for the tint bands is the largest single cell, so the darkest band always
+    # exists and the row-total column never washes the grid out by dominating it.
+    largest = max(int(frame[column].max()) for column in columns)
+
+    styled = frame.style.map(
+        lambda value: matrix_cell_style(int(value), largest), subset=columns
+    ).map(
+        lambda value: "background-color:{};color:{};font-weight:600".format(
+            *SEVERITY_STYLE.get(value, SEVERITY_STYLE["info"])
+        ),
+        subset=["label"],
+    )
+
+    column_config = {
+        "label": st.column_config.TextColumn("Mức độ", pinned=True, width="small"),
+        "count": st.column_config.NumberColumn(
+            "Tổng", width="small", help="Tổng số phát hiện ở mức này, cộng ngang."
+        ),
+    }
+    for column in columns:
+        column_config[column] = st.column_config.NumberColumn(
+            f"Tin cậy {column}",
+            width="small",
+            help=f"Phát hiện có độ tin cậy `{column}` ở mức tương ứng.",
+        )
+
+    st.dataframe(
+        styled,
+        column_config=column_config,
+        hide_index=True,
+        height=45 + 35 * len(frame),
+        width="stretch",
+    )
+    if result.note:
+        st.caption(result.note)
+    st.caption(
+        f"Tổng cộng {result.total} phát hiện — mỗi phát hiện nằm ở đúng một ô, "
+        "nên các ô cộng lại đúng bằng con số **Phát hiện** ở trên."
+    )
+
+
 def render_finding_body(finding) -> None:
     if finding.analysis_source == "fallback":
         st.warning(
@@ -928,6 +765,179 @@ def render_finding_body(finding) -> None:
     st.markdown(f"`{finding.confidence}` — {finding.confidence_reason}")
 
 
+def render_query_result(result, key: str) -> None:
+    """One `QueryResult`, rendered the same way everywhere it appears: chart on top when
+    the result is a distribution, the numbers underneath it always.
+
+    The table is not optional decoration. It is what makes a claim on this page checkable —
+    the chart, the prose in the chat tab, and this table are all the same list of numbers
+    computed once in `report_query`, so a reader can verify a sentence against a count
+    without leaving the page."""
+    chart = report_charts.chart_for(result)
+    if chart is not None:
+        st.altair_chart(chart, width="stretch")
+
+    if result.table:
+        st.dataframe(
+            pd.DataFrame(result.table),
+            width="stretch",
+            hide_index=True,
+            key=f"table_{key}",
+        )
+    if result.note:
+        st.caption(result.note)
+
+
+def render_insights(report) -> None:
+    """The fixed six-panel dashboard (`report_charts.DASHBOARD_PANELS`). Every number here
+    is computed by `report_query` from the findings on disk — no model is involved in this
+    tab at all, which is why it renders identically on the read-only deployment."""
+    st.markdown("### Biểu đồ tổng hợp")
+    st.caption(
+        "Mọi con số dưới đây do mã Python đếm trực tiếp từ `report.jsonl`. "
+        "Mô hình không tham gia vào tab này."
+    )
+
+    columns = st.columns(2)
+    for index, (title, op, dimension, help_text) in enumerate(report_charts.DASHBOARD_PANELS):
+        spec = report_query.QuerySpec(op=op, dimension=dimension, limit=10)
+        try:
+            result = report_query.run_query(report, spec)
+        except report_query.QuerySpecError as exc:
+            columns[index % 2].warning(f"{title}: không dựng được biểu đồ ({exc})")
+            continue
+
+        with columns[index % 2].container(border=True):
+            st.markdown(f"**{title}**")
+            st.caption(help_text)
+            render_query_result(result, key=f"panel_{op}_{dimension or 'none'}")
+
+
+CHAT_HISTORY_KEY = "report_chat_history"
+CHAT_PENDING_KEY = "report_chat_pending"
+
+
+def seed_model_env() -> None:
+    """Make `.env` visible to the chat layer on a local checkout, once per process.
+
+    Reuses `bench.parse_env_file` rather than adding a fourth `.env` reader to the repo —
+    the same reuse `scripts/analyze.py` makes, and for the same reason. Already-exported
+    variables win, so `OPENCODE_BASE_URL=... streamlit run` still overrides the file.
+
+    On the deployed image this is a no-op with nothing to fail into: `.dockerignore`
+    excludes `.env`, so the loader finds no file and the chat runs deterministic. That is
+    the intended state there, not a degradation to fix."""
+    if st.session_state.get("_env_seeded"):
+        return
+    st.session_state["_env_seeded"] = True
+    if scan_runner.runtime_mode() == "readonly":
+        return
+    try:
+        import sys
+        from pathlib import Path
+
+        scripts_dir = Path(__file__).resolve().parent.parent / "scripts"
+        if str(scripts_dir) not in sys.path:
+            sys.path.insert(0, str(scripts_dir))
+        import bench as bench_module
+
+        for key, value in bench_module.parse_env_file(bench_module.ENV_FILE).items():
+            if value:
+                os.environ.setdefault(key, value)
+    except Exception:  # noqa: BLE001 — a missing/unreadable .env is a supported state
+        return
+
+
+def render_chat_provenance(turn) -> None:
+    """How the answer was produced, in the answer's own words. A turn that fell back is
+    labelled as one — an answer written by a template must never be mistaken for an answer
+    written by the model, and a route the model got wrong has to be diagnosable."""
+    route_label = "mô hình" if turn.route_source == "llm" else "từ khoá (tất định)"
+    answer_label = "mô hình" if turn.answer_source == "llm" else "mẫu (tất định)"
+    with st.expander("Câu trả lời này được tạo ra thế nào?"):
+        st.markdown(
+            f"- **Chọn truy vấn:** {route_label}"
+            + (f" — mô hình thất bại: `{turn.route_failure}`" if turn.route_failure and turn.route_source == "keyword" else "")
+        )
+        st.markdown(
+            f"- **Viết lời:** {answer_label}"
+            + (f" — mô hình bị loại: `{turn.answer_failure}`" if turn.answer_failure and turn.answer_source == "template" else "")
+        )
+        st.markdown("- **Số liệu:** luôn do `report_query` tính bằng Python, không do mô hình đếm.")
+        st.markdown(f"- **Truy vấn đã chạy:** `{turn.spec_json}`")
+        st.markdown(
+            f"- **Số phát hiện làm căn cứ:** {len(turn.result.finding_ids)} "
+            f"(khớp bộ lọc: {turn.result.total})"
+        )
+        if turn.tokens:
+            st.markdown(f"- **Token đã dùng cho lượt này:** {turn.tokens}")
+        if turn.prompt_version:
+            st.markdown(
+                f"- **Prompt:** `{turn.prompt_version}` sha256 `{(turn.prompt_sha256 or '')[:12]}`"
+            )
+        for note in turn.notes:
+            st.caption(note)
+
+
+def render_chat_turn(turn) -> None:
+    with st.chat_message("user"):
+        st.markdown(turn.question)
+    with st.chat_message("assistant"):
+        st.markdown(turn.answer)
+        render_query_result(turn.result, key=f"chat_{id(turn)}")
+        render_chat_provenance(turn)
+
+
+def render_report_chat(report) -> None:
+    seed_model_env()
+    has_model = report_chat.model_available() and bool(report_chat.default_model())
+
+    st.caption(
+        "Hỏi bằng tiếng Việt về chính báo cáo này. Mô hình chỉ chọn truy vấn và viết lời — "
+        "mọi con số đều do Python đếm từ `report.jsonl`, và bảng số liệu luôn hiện ngay "
+        "dưới câu trả lời để đối chiếu."
+    )
+
+    if not has_model:
+        st.info(
+            "**Chế độ không có mô hình.** Bản cài này không có khoá API, nên câu hỏi được "
+            "định tuyến bằng từ khoá và câu trả lời được dựng từ mẫu — tất định, không tốn "
+            "token. Biểu đồ và số liệu **không đổi**: chúng chưa bao giờ do mô hình sinh ra. "
+            "Muốn có lời văn do mô hình viết thì chạy bản local có `.env`.",
+            icon=":material/info:",
+        )
+
+    history = st.session_state.setdefault(CHAT_HISTORY_KEY, [])
+
+    if not history:
+        st.markdown("**Thử một câu hỏi:**")
+        suggestion_columns = st.columns(3)
+        for index, suggestion in enumerate(report_chat.SUGGESTED_QUESTIONS):
+            if suggestion_columns[index % 3].button(
+                suggestion, key=f"suggest_{index}", width="stretch"
+            ):
+                st.session_state[CHAT_PENDING_KEY] = suggestion
+                st.rerun()
+
+    for turn in history:
+        render_chat_turn(turn)
+
+    question = st.session_state.pop(CHAT_PENDING_KEY, None) or st.chat_input(
+        "ví dụ: lỗi CWE-89 nằm ở những tệp nào?"
+    )
+    if question:
+        with st.spinner("Đang tra báo cáo…"):
+            turn = report_chat.answer(question, report, use_llm=has_model)
+        history.append(turn)
+        st.rerun()
+
+    if history:
+        st.divider()
+        if st.button("Xoá hội thoại", icon=":material/delete:"):
+            st.session_state[CHAT_HISTORY_KEY] = []
+            st.rerun()
+
+
 def page_security_report() -> None:
     st.title("Security Report")
     st.caption(
@@ -954,8 +964,26 @@ def page_security_report() -> None:
 
     meta = report.meta
     render_report_status_banner(meta)
-    render_report_kpis(report)
 
+    overview_tab, chat_tab, list_tab = st.tabs(
+        ["Tổng quan", "Hỏi đáp", "Danh sách phát hiện"]
+    )
+
+    with overview_tab:
+        render_report_kpis(report)
+        st.divider()
+        render_severity_confidence_matrix(report)
+        st.divider()
+        render_insights(report)
+
+    with chat_tab:
+        render_report_chat(report)
+
+    with list_tab:
+        render_findings_list(report, meta)
+
+
+def render_findings_list(report, meta) -> None:
     with st.container(border=True):
         filter_columns = st.columns([1, 1, 2])
         with filter_columns[0]:
@@ -1021,33 +1049,31 @@ is_readonly = scan_runner.runtime_mode() == "readonly"
 st.sidebar.markdown("### :material/security: Scan BenchmarkJava")
 st.sidebar.caption("Metis vs OWASP BenchmarkJava")
 
-# Streamlit serves the default page at `/` and IGNORES its `url_path`, so exactly one
-# page can never be linked to by name — asking for it opened a "Page not found" dialog.
-# Making `default` mode-dependent made that worse: the dead link was `/run` locally but
-# `/results` on the deploy, so the most shareable URL of the read-only instance was the
-# one that 404'd. Run Scan is the default on both instances now and answers to `/` (no
-# `url_path`, because it would be a promise Streamlit does not keep); Results, Matrix and
-# Knowledge Base each keep a URL that resolves everywhere (nav: deep-linking).
+# A read-only instance does not build the Run Scan page at all. Its entire content there
+# was a notice explaining that scanning is unavailable, and a nav entry whose only job is
+# to apologise is worse than no entry — the deploy now shows only what it can actually
+# serve. This is presentation, not protection: what makes the instance safe is still
+# `scan_runner`'s own refusal to spawn (ADR 19), which is why `page_run_scan` keeps its
+# read-only guard even though nothing can reach it here.
+#
+# Streamlit serves the default page at `/` and IGNORES its `url_path`, so exactly one page
+# can never be linked to by name. Locally that is Run Scan, which has no name to lose. On
+# the deploy it is Results — chosen over Security Report because `/security-report` is the
+# link README and the week-3 report both hand out, and it has to keep resolving. Nothing
+# published points at `/results`.
 run_page = st.Page(page_run_scan, title="Run Scan", icon=":material/play_circle:",
-                   default=True)
+                   default=not is_readonly)
 results_page = st.Page(page_results, title="Results", icon=":material/bar_chart:",
-                       url_path="results")
+                       url_path="results", default=is_readonly)
 pages = [
-    run_page,
     results_page,
-    st.Page(page_matrix, title="Matrix", icon=":material/grid_on:", url_path="matrix"),
     st.Page(page_security_report, title="Security Report", icon=":material/shield:",
             url_path="security-report"),
     st.Page(page_knowledge_base, title="Knowledge Base", icon=":material/search:", url_path="knowledge-base"),
 ]
+if not is_readonly:
+    pages.insert(0, run_page)
 current_page = st.navigation(pages)
-
-# A read-only instance still LANDS on Results — the page it can actually serve — rather
-# than on a Run Scan page whose only content is why it is unavailable. Once per session,
-# and only for someone who arrived at `/`: a deep link to any page is left alone.
-if is_readonly and current_page == run_page and not st.session_state.get("landed"):
-    st.session_state.landed = True
-    st.switch_page(results_page)
 
 with st.sidebar:
     st.divider()
