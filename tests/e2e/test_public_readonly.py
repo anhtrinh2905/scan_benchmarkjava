@@ -29,6 +29,22 @@ def body(page) -> str:
     return page.locator("body").inner_text()
 
 
+def wait_for_text(page, needle: str, timeout_ms: int = 45_000) -> bool:
+    """Poll the rendered body until `needle` shows up, or give up.
+
+    Streamlit fills the page over a websocket in several deltas, so a fixed sleep races the
+    render: the same healthy page passed at 21s and failed at 9s, which reads as a broken
+    deploy when it is a broken assertion. Waiting for the thing we are asserting on removes
+    the race in the only direction that matters — a marker that never arrives still fails."""
+    waited = 0
+    while waited < timeout_ms:
+        if needle.lower() in body(page).lower():
+            return True
+        page.wait_for_timeout(1_500)
+        waited += 1_500
+    return False
+
+
 def main() -> int:
     failures = []
     with sync_playwright() as p:
@@ -58,11 +74,12 @@ def main() -> int:
 
         print("\n=== 2. The landing page IS Results, with real data ===")
         # Structural markers, not a model name. The old check looked for 'deepseek', which
-        # was really an assertion about which run the page happens to preselect — that run
-        # is `cx/gpt-5.4` today, and the check failed while the page was perfectly healthy.
-        # A scorecard with a precision figure in it is what "real data rendered" means.
+        # really asserted which run the page preselects — and that changes: a redeploy
+        # rewrites file mtimes, so the run at the top of the list is not stable across
+        # builds. A scorecard with a precision table in it is what "real data" means, on
+        # whichever run got picked.
         for marker in ("scorecard", "precision", "recall"):
-            hit = marker in landing.lower()
+            hit = wait_for_text(page, marker)
             print(f"  {marker!r:14} on landing     : {'yes' if hit else 'NO <-- BAD'}")
             if not hit:
                 failures.append(f"landing page missing {marker!r}")
@@ -70,13 +87,13 @@ def main() -> int:
         print("\n=== 3. /security-report resolves by name (README hands out this link) ===")
         page.goto(f"{URL}/security-report", wait_until="networkidle", timeout=90_000)
         page.wait_for_timeout(9_000)
-        report = body(page)
-        page.screenshot(path=f"{SHOTS}_3_security_report.png", full_page=True)
         for marker in ("Security Report", "Tổng quan", "Ma trận"):
-            hit = marker.lower() in report.lower()
+            hit = wait_for_text(page, marker)
             print(f"  {marker!r:16} present       : {'yes' if hit else 'NO <-- BAD'}")
             if not hit:
                 failures.append(f"Security Report missing {marker!r}")
+        report = body(page)
+        page.screenshot(path=f"{SHOTS}_3_security_report.png", full_page=True)
         if "page not found" in report.lower():
             failures.append("/security-report 404'd — the published deep link is dead")
 
