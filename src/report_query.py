@@ -580,7 +580,7 @@ _DIMENSION_KEYWORDS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("owasp", ("owasp", "top 10", "top10")),
     ("cwe", ("cwe", "loại lỗi", "loai loi", "kiểu lỗi", "kieu loi")),
     ("confidence", ("tin cậy", "tin cay", "confidence")),
-    ("tool", ("công cụ", "cong cu", "tool", "semgrep", "metis")),
+    ("tool", ("công cụ", "cong cu", "tool", "semgrep", "metis", "zap")),
     ("analysis_source", ("fallback", "dự phòng", "du phong", "nguồn phân tích", "mô hình hay")),
 )
 

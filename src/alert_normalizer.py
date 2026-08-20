@@ -29,10 +29,19 @@ _SARIF_LEVEL_SEVERITY = {
 
 _CWE_RE = re.compile(r"CWE-\d+")
 
+# ZAP's `riskcode` (0-3, Traditional JSON Report) -> Alert.severity. ZAP has no "critical",
+# so its own top risk ("High") lands on this repo's "high", not "critical".
+_ZAP_RISKCODE_SEVERITY = {
+    "3": "high",
+    "2": "medium",
+    "1": "low",
+    "0": "info",
+}
+
 
 @dataclass
 class Alert:
-    tool: Literal["semgrep", "metis"]
+    tool: Literal["semgrep", "metis", "zap"]
     severity: Literal["critical", "high", "medium", "low", "info"]
     file_or_url: str
     title: str
@@ -103,6 +112,38 @@ def normalize_bench_summary(summary_path: Path) -> list[Alert]:
                     source_path=str(summary_path),
                 )
             )
+    return alerts
+
+
+def normalize_zap(zap_json_path: Path) -> list[Alert]:
+    """Maps a ZAP baseline "Traditional JSON Report" into the flat `Alert` schema.
+
+    One `Alert` per (alert type, instance) pair, mirroring `normalize_sarif`'s one-per-
+    occurrence shape: `file_or_url` carries the actual probed URL (not a source file), which
+    is what lets a later stage map a finding back to a gateway route.
+    """
+    data = json.loads(Path(zap_json_path).read_text())
+    alerts: list[Alert] = []
+    for site in data.get("site", []):
+        for alert in site.get("alerts", []):
+            cwe_id = alert.get("cweid")
+            cwe = f"CWE-{cwe_id}" if cwe_id and cwe_id != "-1" else None
+            severity = _ZAP_RISKCODE_SEVERITY.get(str(alert.get("riskcode", "")), DEFAULT_SEVERITY)
+            instances = alert.get("instances") or [{}]
+            for instance in instances:
+                alerts.append(
+                    Alert(
+                        tool="zap",
+                        severity=severity,
+                        file_or_url=instance.get("uri", site.get("@name", "")),
+                        title=alert.get("name") or alert.get("alert") or "zap finding",
+                        description=alert.get("desc", ""),
+                        rule_id=alert.get("pluginid"),
+                        cwe=cwe,
+                        line=None,
+                        source_path=str(zap_json_path),
+                    )
+                )
     return alerts
 
 

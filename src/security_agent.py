@@ -68,7 +68,7 @@ CONFIDENCES = ("high", "medium", "low")
 SEVERITY_RANK = {"info": 0, "low": 1, "medium": 2, "high": 3, "critical": 4}
 _RANK_TO_SEVERITY = {rank: name for name, rank in SEVERITY_RANK.items()}
 
-TOOLS = ("semgrep", "metis")
+TOOLS = ("semgrep", "metis", "zap")
 
 # Every key an Alert record must carry. The three nullable ones still have to be PRESENT —
 # a record that simply omits `cwe` is malformed, not a record with an unknown CWE.

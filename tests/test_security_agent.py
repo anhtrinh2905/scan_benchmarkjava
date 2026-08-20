@@ -126,6 +126,20 @@ def test_invalid_line_raw_is_truncated_to_the_contract_limit(tmp_path):
     assert len(load.skipped[0].raw) == agent.RAW_LINE_LIMIT
 
 
+def test_zap_is_an_accepted_tool_not_a_bad_type_skip(tmp_path):
+    """`normalize_zap` (a DAST source, week 6) feeds this same loader — `tool="zap"` must
+    survive `_validate_alert` like `semgrep`/`metis` already do, not land in `skipped`."""
+    path = tmp_path / "zap-alerts.jsonl"
+    from alert_normalizer import append_alerts
+
+    zap_alert = _alert(tool="zap", file_or_url="http://juice-shop:3000/rest/user/login")
+    append_alerts([zap_alert], out_path=path)
+
+    load = agent.load_alerts(input_path=path)
+    assert load.skipped == []
+    assert [a.tool for a in load.alerts] == ["zap"]
+
+
 # --- FR21 scenario 3: no KB, no model ---------------------------------------------
 
 
