@@ -39,7 +39,7 @@ cp .env.example .env
 
 | Biến                | Ý nghĩa                                           |
 | ------------------- | ------------------------------------------------- |
-| `CUSTOM_SCAN_MODEL` | Model id dùng để quét (ví dụ `deepseek-v4-pro`)   |
+| `CUSTOM_SCAN_MODEL` | Model id dùng để quét (ví dụ `glm-5.1`)   |
 | `OPENCODE_BASE_URL` | Base URL OpenAI-compatible (mặc định OpenCode Go) |
 | `OPENCODE_API_KEY`  | API key                                           |
 
@@ -295,7 +295,7 @@ và `seed_model_env()` chỉ đọc file `.env` ở chế độ local.
 ```bash
 railway variables --set OPENCODE_API_KEY=...        # secret — tự đặt, đừng dán vào chat/PR
 railway variables --set OPENCODE_BASE_URL=https://opencode.ai/zen/go/v1
-railway variables --set CUSTOM_SCAN_MODEL=deepseek-v4-pro
+railway variables --set CUSTOM_SCAN_MODEL=glm-5.1
 ```
 
 Hai lớp trần, chặn hai thứ khác nhau:
