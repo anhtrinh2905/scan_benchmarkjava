@@ -22,6 +22,8 @@ from sklearn.decomposition import TruncatedSVD
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
+import llm_trace
+
 ROOT = Path(__file__).resolve().parent.parent
 KB_DIR = ROOT / "data" / "kb"
 KB_DOCS_DIR = KB_DIR / "docs"
@@ -147,17 +149,31 @@ def _save_cache(cache_path: Path, cache: dict) -> None:
 
 def _embed_one(text: str) -> list[float]:
     """POST a single string to the OPENCODE embeddings endpoint. Raises on
-    any HTTP/parse failure — callers decide how to treat that (fallback)."""
+    any HTTP/parse failure — callers decide how to treat that (fallback).
+
+    Traced as an `embedding` run: it is a paid model call like any other, and when
+    semantic search silently degrades to TF-IDF+LSA the reason is here."""
     base_url = os.environ.get("OPENCODE_BASE_URL", "").rstrip("/")
     api_key = os.environ.get("OPENCODE_API_KEY", "")
-    response = requests.post(
-        f"{base_url}/embeddings",
-        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
-        json={"model": EMBEDDINGS_MODEL, "input": text},
-        timeout=EMBEDDINGS_TIMEOUT_SECONDS,
-    )
-    response.raise_for_status()
-    return response.json()["data"][0]["embedding"]
+    with llm_trace.trace_llm(
+        "kb.embed",
+        model=EMBEDDINGS_MODEL,
+        inputs={"input": text},
+        run_type="embedding",
+        metadata={"chars": len(text)},
+    ) as span:
+        response = requests.post(
+            f"{base_url}/embeddings",
+            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+            json={"model": EMBEDDINGS_MODEL, "input": text},
+            timeout=EMBEDDINGS_TIMEOUT_SECONDS,
+        )
+        response.raise_for_status()
+        payload = response.json()
+        vector = payload["data"][0]["embedding"]
+        span.set_outputs(dimensions=len(vector))
+        span.record_llm_response(usage=payload.get("usage"))
+        return vector
 
 
 def embed_kb_docs(docs_dir: Path = KB_DOCS_DIR, cache_path: Path = KB_EMBED_CACHE) -> int:
@@ -275,8 +291,26 @@ def _semantic_search(query: str, top_k: int, min_score: float) -> list[KBHit]:
 def search_kb(
     query: str, mode: str = "keyword", top_k: int = 5, min_score: float = 0.1
 ) -> list[KBHit]:
-    if mode == "keyword":
-        return _keyword_search(build_kb_index(KB_DOCS_DIR), query, top_k, min_score)
-    if mode == "semantic":
-        return _semantic_search(query, top_k, min_score)
-    raise ValueError(f"unknown search mode: {mode!r}")
+    """Traced as a `retriever` run, so a finding's trace shows what the model was given
+    to reason from — a wrong KB doc is a far more common cause of a wrong finding than a
+    wrong prompt, and it is invisible from the completion alone."""
+    with llm_trace.trace_step(
+        "kb.search",
+        run_type="retriever",
+        inputs={"query": query},
+        metadata={"mode": mode, "top_k": top_k, "min_score": min_score},
+    ) as span:
+        if mode == "keyword":
+            hits = _keyword_search(build_kb_index(KB_DOCS_DIR), query, top_k, min_score)
+        elif mode == "semantic":
+            hits = _semantic_search(query, top_k, min_score)
+        else:
+            raise ValueError(f"unknown search mode: {mode!r}")
+        span.set_outputs(
+            documents=[
+                {"doc_id": hit.doc_id, "title": hit.title, "score": round(hit.score, 4)}
+                for hit in hits
+            ]
+        )
+        span.set_metadata(embeddings_unavailable=_embeddings_unavailable)
+        return hits

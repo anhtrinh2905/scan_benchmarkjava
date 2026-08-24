@@ -36,6 +36,7 @@ from typing import Callable, Literal
 import requests
 
 import kb_search
+import llm_trace
 from alert_normalizer import (
     KB_ALERTS_PATH,
     SEVERITIES,
@@ -872,9 +873,33 @@ def _user_turn(group: AlertGroup, kb_hits: list[kb_search.KBHit]) -> str:
 
 
 def _post_chat(messages: list[dict], model: str, timeout: int) -> tuple[str | None, int, str | None]:
-    """One POST. Returns `(content, total_tokens, failure_reason)` — never raises for a
-    model or transport problem, because the caller is the one that decides what a failure
-    means for the report."""
+    """One POST, wrapped in one LangSmith run. Returns `(content, total_tokens,
+    failure_reason)` — never raises for a model or transport problem, because the caller is
+    the one that decides what a failure means for the report.
+
+    The signature is deliberately unchanged: three test suites stub exactly this function
+    as "the only thing in `security_agent` that touches the network", so the tracing goes
+    *around* it and the network stays in `_send_chat`. A stubbed model therefore also
+    means a silent tracer, which is what a test wants.
+
+    The run is named for the endpoint rather than for the caller; what the call was *for*
+    comes from the step it nests under (`analysis.group`, `chat.router`, ...).
+    """
+    with llm_trace.trace_llm(
+        "opencode.chat", model=model, messages=messages, metadata={"timeout_s": timeout}
+    ) as span:
+        content, tokens, reason = _send_chat(messages, model, timeout)
+        span.record_llm_response(
+            content=content, usage={"total_tokens": tokens} if tokens else None
+        )
+        if reason is not None:
+            span.set_error(reason)
+        return content, tokens, reason
+
+
+def _send_chat(messages: list[dict], model: str, timeout: int) -> tuple[str | None, int, str | None]:
+    """The POST itself. Split out of `_post_chat` only so the tracing wrapper has
+    something to wrap; every failure classification lives here."""
     base_url = os.environ.get("OPENCODE_BASE_URL", "").rstrip("/")
     api_key = os.environ.get("OPENCODE_API_KEY", "")
     try:
@@ -991,7 +1016,49 @@ def analyze_group(
 ) -> GroupAnalysis:
     """Exactly one paid call per group, plus at most one retry whose message names the
     validation error (ADR 24). A transport, status or zero-token failure is NOT retried —
-    retrying those buys nothing and costs money. Never raises."""
+    retrying those buys nothing and costs money. Never raises.
+
+    One LangSmith step per group, so the call and its retry appear as two children of one
+    parent rather than as two unrelated calls — the retry only makes sense next to the
+    validation error that caused it."""
+    with llm_trace.trace_step(
+        "analysis.group",
+        inputs={
+            "group_key": group.group_key,
+            "title": group.title,
+            "occurrences": group.occurrence_count,
+            "kb_doc_ids": [hit.doc_id for hit in kb_hits],
+        },
+        metadata={
+            "tools": group.tools,
+            "tool_severity": group.tool_severity,
+            "cwe": group.cwe,
+            "allow_retry": allow_retry,
+        },
+    ) as span:
+        analysis = _analyze_group(group, kb_hits, prompt, model, timeout, allow_retry)
+        span.set_outputs(
+            ok=analysis.ok,
+            calls=analysis.calls,
+            total_tokens=analysis.total_tokens,
+            failure_reason=analysis.failure_reason,
+            title=analysis.finding.title_vi if analysis.finding else None,
+            severity=analysis.finding.severity if analysis.finding else None,
+        )
+        if not analysis.ok:
+            span.set_error(f"{analysis.failure_reason}: {analysis.failure_detail}")
+        return analysis
+
+
+def _analyze_group(
+    group: AlertGroup,
+    kb_hits: list[kb_search.KBHit],
+    prompt: SystemPrompt,
+    model: str | None,
+    timeout: int,
+    allow_retry: bool,
+) -> GroupAnalysis:
+    """The call-and-retry itself, split out so `analyze_group` is the traced boundary."""
     resolved_model = model or os.environ.get("CUSTOM_SCAN_MODEL") or ""
     messages = [
         {"role": "system", "content": prompt.text},
@@ -1100,7 +1167,48 @@ def analyze(
     those are statuses (FR21), not exceptions. A missing prompt file IS an exception, and
     only on the model path: the agent never runs on an implicit prompt (ADR 28). Writing
     is `write_report()`'s job alone.
+
+    The whole run is one LangSmith trace: every `analysis.group` step, and every call
+    inside it, hangs off this one node. An offline run (`no_llm`) opens the node too —
+    "this run spent nothing" is a fact worth being able to see next to the ones that did.
     """
+    with llm_trace.trace_step(
+        "analysis.run",
+        inputs={
+            "input_path": str(input_path),
+            "from_run": from_run,
+            "limit": limit,
+            "no_llm": no_llm,
+        },
+        metadata={"top_k": top_k, "min_score": min_score},
+    ) as span:
+        report = _analyze(input_path, from_run, top_k, min_score, limit, no_llm, model, progress)
+        span.set_outputs(
+            status=report.meta.status,
+            groups=report.meta.groups,
+            findings=report.meta.findings,
+            llm_calls=report.meta.llm_calls,
+            llm_failures=report.meta.llm_failures,
+            total_tokens=report.meta.total_tokens,
+            duration_seconds=report.meta.duration_seconds,
+        )
+        span.set_metadata(model=report.meta.model, prompt_version=report.meta.prompt_version)
+        if report.meta.status == "degraded":
+            span.set_error("degraded: mọi nhóm gửi tới mô hình đều thất bại")
+        return report
+
+
+def _analyze(
+    input_path: Path,
+    from_run: str | None,
+    top_k: int,
+    min_score: float,
+    limit: int | None,
+    no_llm: bool,
+    model: str | None,
+    progress: Callable[[int, int, str], None] | None,
+) -> AnalysisReport:
+    """The pipeline itself, split out so `analyze` is the traced boundary."""
     started = time.monotonic()
     # Read the module global at call time, not at def time, so a caller (or a test) can
     # point the run at a different prompt file.

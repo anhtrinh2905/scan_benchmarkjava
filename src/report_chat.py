@@ -41,11 +41,12 @@ import json
 import os
 import re
 import time
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Literal
 
+import llm_trace
 import report_query
 from report_query import QueryResult, QuerySpec, QuerySpecError
 from security_agent import (
@@ -393,7 +394,30 @@ def _route_with_model(
     question: str, report, prompt: SystemPrompt, model: str
 ) -> tuple[QuerySpec | None, int, str | None, str]:
     """`(spec, tokens, failure_reason, detail)`. Never raises for a model problem — a bad
-    route is a labelled fallback, not an error page."""
+    route is a labelled fallback, not an error page.
+
+    Traced as its own step: the router and the narrator are two different jobs done by the
+    same model, and a turn that routed well but narrated badly (or the reverse) is only
+    readable if the two calls are labelled apart."""
+    with llm_trace.trace_step(
+        "chat.router", inputs={"question": question}, metadata={"model": model}
+    ) as span:
+        spec, tokens, failure, detail = _route_reply(question, report, prompt, model)
+        span.set_outputs(
+            spec=asdict(spec) if spec is not None else None,
+            tokens=tokens,
+            failure_reason=failure,
+        )
+        if failure is not None:
+            span.set_error(f"{failure}: {detail}")
+        return spec, tokens, failure, detail
+
+
+def _route_reply(
+    question: str, report, prompt: SystemPrompt, model: str
+) -> tuple[QuerySpec | None, int, str | None, str]:
+    """The routing call and its validation, split out so the wrapper above is the traced
+    boundary."""
     system = _section(prompt.text, ROUTER_HEADING)
     if not system:
         return None, 0, "prompt_missing", f"thiếu section '## {ROUTER_HEADING}'"
@@ -428,6 +452,24 @@ def _route_with_model(
 def _narrate_with_model(
     question: str, result: QueryResult, prompt: SystemPrompt, model: str
 ) -> tuple[str | None, int, str | None, str]:
+    """`(text, tokens, failure_reason, detail)`, traced as its own step. A narration
+    rejected for inventing a number is the single most interesting failure this file has,
+    so it is recorded on the span rather than only counted."""
+    with llm_trace.trace_step(
+        "chat.narrator",
+        inputs={"question": question, "rows": len(result.table)},
+        metadata={"model": model},
+    ) as span:
+        text, tokens, failure, detail = _narrate_reply(question, result, prompt, model)
+        span.set_outputs(answer=text, tokens=tokens, failure_reason=failure)
+        if failure is not None:
+            span.set_error(f"{failure}: {detail}")
+        return text, tokens, failure, detail
+
+
+def _narrate_reply(
+    question: str, result: QueryResult, prompt: SystemPrompt, model: str
+) -> tuple[str | None, int, str | None, str]:
     system = _section(prompt.text, NARRATOR_HEADING)
     if not system:
         return None, 0, "prompt_missing", f"thiếu section '## {NARRATOR_HEADING}'"
@@ -460,7 +502,36 @@ def answer(question: str, report, use_llm: bool = True, model: str | None = None
 
     Runs at most two model calls and always produces an answer. `use_llm=False` — or an
     environment with no credentials — takes the deterministic path end to end, which is
-    reproducible and costs nothing."""
+    reproducible and costs nothing.
+
+    One trace per turn, whichever path it took: the deterministic answers are the baseline
+    the model path has to beat, so a trace of "answered from a template, no tokens" is as
+    worth having as a trace of two calls."""
+    with llm_trace.trace_step(
+        "chat.answer",
+        inputs={"question": (question or "").strip(), "use_llm": bool(use_llm)},
+    ) as span:
+        turn = _answer(question, report, use_llm, model)
+        span.set_outputs(
+            answer=turn.answer,
+            route_source=turn.route_source,
+            answer_source=turn.answer_source,
+            tokens=turn.tokens,
+            spec=turn.spec_json,
+            rows=len(turn.result.table),
+            elapsed_seconds=turn.elapsed_seconds,
+        )
+        span.set_metadata(
+            model=turn.model,
+            prebaked=turn.prebaked,
+            route_failure=turn.route_failure,
+            answer_failure=turn.answer_failure,
+        )
+        return turn
+
+
+def _answer(question: str, report, use_llm: bool = True, model: str | None = None) -> ChatTurn:
+    """The turn itself, split out so `answer` is the traced boundary."""
     started = time.perf_counter()
     question = (question or "").strip()
     notes: list[str] = []
